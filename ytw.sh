@@ -81,6 +81,18 @@ get_sleep_by_duration () {
     printf "%d" $DURATION
 }
 
+# Unknown if this is necessary, but maybe it prevents some sort of detection if the next video
+# plays immediately.
+cool_down_queue () {
+    local DURATION
+    # Set randomly between 3 to 13 minutes.
+    DURATION=$(echo $(($RANDOM%(13-3+1)+3)))
+
+    DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
+    echo "[+++] ${DATETIME} Cooldown video queue for channel '${CHANNEL_NAME}'."
+    sleep_minutes $DURATION
+}
+
 if [ -z "${CHANNEL_NAME}" ]; then
     DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
     printf "%s\n" "[!!!] ${DATETIME} Missing YouTube channel name. Exiting."
@@ -222,5 +234,8 @@ while true; do
 
         # Remember the last fully watched video.
         printf '%s' "${YOUTUBE_ID}" > "${FILE_CHANNEL_LAST_VIDEO}"
+
+        # Cool down queue.
+        cool_down_queue
     done <<<"${WATCH_ENTRIES[@]}"
 done
