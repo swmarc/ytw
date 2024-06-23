@@ -14,12 +14,12 @@
     const WATCH_PERCENTAGE = 91;
     const COMMENT_TEXTS = [
         "Gutes Video!",
-        "Sehr informativ, danke!",
-        "Tolles Video, weiter so!",
-        "Sehr hilfreich, Danke Dir!",
-        "Großartige Arbeit!",
-        "Sehr lehrreich!",
-        "Super informativ!"
+        // "Sehr informativ, danke!",
+        // "Tolles Video, weiter so!",
+        // "Sehr hilfreich, Danke Dir!",
+        // "Großartige Arbeit!",
+        // "Sehr lehrreich!",
+        // "Super informativ!"
     ];
 
     let WATCH_THRESHOLD_REACHED = 0;
