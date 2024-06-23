@@ -89,7 +89,7 @@ cool_down_queue () {
     DURATION=$(echo $(($RANDOM%(13-3+1)+3)))
 
     DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-    echo "[+++] ${DATETIME} Cooldown video queue for channel '${CHANNEL_NAME}'."
+    echo "[+++] ${DATETIME} Cool down video queue for channel '${CHANNEL_NAME}'."
     sleep_minutes $DURATION
 }
 
