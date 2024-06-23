@@ -47,7 +47,7 @@ trap cleanup SIGINT
 # Calculate and sleep processing the video list depending on the duration of a video.
 sleep_minutes () {
     local MINUTES=$1
-    local ITERATION=1 MINUTE=0 SUFFIX="s"
+    local ITERATION=0 MINUTE=0 SUFFIX="s"
     local PROGRESS_PERC=0
 
     for ((MINUTE = MINUTES; MINUTE > 0; MINUTE--)); do
