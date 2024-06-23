@@ -27,7 +27,7 @@ See `INSTALLING` for first setup and additional tweaking like auto-liking & auto
 
 ### Importent notes
 
-If have more than one YouTube channel, YouTube oftens tends to switch to your standard (default) YouTube channel for watching for unknown reasons even if you already switched (back) to another one. To solve this set your desired channel to the default one under `Settings > Advanced Settings`.
+If you have more than one YouTube channel, YouTube often tends to switch to your standard (default) YouTube channel for watching for unknown reasons even if you already switched (back) to another one. To solve this set your desired channel to the default one under `Settings > Advanced Settings`.
 
 ## License
 
