@@ -27,8 +27,7 @@ See `INSTALLING` for first setup and additional tweaking like auto-liking & auto
 
 ### Importent notes
 
-If running a watcher for a channel the first time keep a look at your selected YouTube account you want to use.
-Here, YouTube switched around 2-3 times back to the main YouTube account. Just switch back to the desired account and YouTube should lastly remember the correct account.
+If have more than one YouTube channel, YouTube oftens tends to switch to your standard (default) YouTube channel for watching for unknown reasons even if you already switched (back) to another one. To solve this set your desired channel to the default one under `Settings > Advanced Settings`.
 
 ## License
 
