@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name         YouTube Auto Comment After Watch Time
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.0.1
 // @description  Automatically comments a YouTube video after watching a specified percentage
 // @author       swmarc
+// @downloadurl  https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-comment.user.js
+// @updateurl    https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-comment.user.js
 // @match        https://www.youtube.com/watch*
 // @grant        none
 // ==/UserScript==

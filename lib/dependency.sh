@@ -3,7 +3,6 @@
 set -eu -o pipefail
 
 CWD_LIB_DEPENDENCY="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
-LIB_DEPENDENCY_UBUNTU=$(basename "${BASH_SOURCE[0]}" .sh)
 
 ywt.lib.dependency.check_commands () {
   local LIST_COMMANDS=${1:-}
