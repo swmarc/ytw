@@ -53,6 +53,23 @@ cleanup () {
 trap cleanup EXIT
 trap cleanup SIGINT
 
+print_iteration () {
+    local CURRENT=${1}
+    local TOTAL=${2}
+    local LEFT=$(( TOTAL - CURRENT ))
+
+    printf '%b%b%b%b%b%b%b%b%b' \
+        '[I:' \
+        "${CURRENT}" \
+        ' ' \
+        'L:' \
+        "${LEFT}" \
+        ' ' \
+        'T:' \
+        "${TOTAL}" \
+        ']'
+}
+
 # Calculate and sleep processing the video list depending on the duration of a video.
 sleep_minutes () {
     local MINUTES=$1
@@ -213,6 +230,8 @@ while true; do
         continue
     fi
 
+    ITERATION=1
+    ITERATION_TOTAL=$(printf '%s\n' "${WATCH_ENTRIES[@]}" | wc -l)
     while read -r WATCH_ENTRY; do
         YOUTUBE_ID=$(echo "${WATCH_ENTRY}" | cut -d' ' -f1)
         YOUTUBE_URL=$(echo "${WATCH_ENTRY}" | cut -d' ' -f2)
@@ -224,7 +243,7 @@ while true; do
             "${YOUTUBE_VIDEO_ID}"
 
         DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-        echo "[+++] ${DATETIME} Starting Firefox instance with URL '${YOUTUBE_URL}'."
+        echo "[+++] ${DATETIME} $(print_iteration "${ITERATION}" "${ITERATION_TOTAL}") Starting Firefox instance with URL '${YOUTUBE_URL}'."
 
         # Starts a Firefox instance with a video from the playlist and closes Firefox
         # after the duration of the video with some small buffer.
@@ -253,6 +272,7 @@ while true; do
 
         # Remember the last fully watched video.
         printf '%s' "${YOUTUBE_ID}" > "${FILE_CHANNEL_LAST_VIDEO}"
+        ITERATION=$((ITERATION + 1))
 
         # Cool down queue.
         cool_down_queue
