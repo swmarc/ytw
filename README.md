@@ -24,6 +24,7 @@ See `INSTALLING` for first setup and additional tweaking like auto-liking & auto
 
 * `bash ytw.sh ChannelName` # Use channel name from behind `@` eg. https://youtube.com/@ChannelName
 * Carefully read the instructions if running the script the first time for a channel.
+* Optional: For `Discord` notifications create a file called `discord-webhook` in the same directory as `ytw.sh` with the web URL as its content.
 
 ### Importent notes
 
