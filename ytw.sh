@@ -217,7 +217,7 @@ while true; do
         YOUTUBE_ID=$(echo "${WATCH_ENTRY}" | cut -d' ' -f1)
         YOUTUBE_URL=$(echo "${WATCH_ENTRY}" | cut -d' ' -f2)
 
-        YOUTUBE_VIDEO_ID=$(echo "${YOUTUBE_URL}" | rev | cut -d'/' -f 1 | rev)
+        YOUTUBE_VIDEO_ID=$(echo "${YOUTUBE_URL}" | rev | cut -d'=' -f 1 | rev)
         ytw.lib.hooks.discord.hook \
             "[${CHANNEL_NAME}]" \
             "Start watching video with ID \`${YOUTUBE_VIDEO_ID}\`." \
