@@ -13,6 +13,7 @@ See `INSTALLING` for first setup and additional tweaking like auto-liking & auto
 ### Dependencies
 
 * `git`
+* `curl`
 * `yt-dlp`
 * `firefox`
 
