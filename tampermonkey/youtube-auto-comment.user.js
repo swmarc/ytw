@@ -83,16 +83,21 @@
         const commentsElement = document.querySelector('#comments');
         if (commentsElement) {
             commentsElement.scrollIntoView();
-            const intervalId = setInterval(() => {
-                const clickEvent = new MouseEvent('click', { view: window, bubbles: true, cancelable: true });
-                const commentsEnabler = document.querySelector("#placeholder-area");
-                commentsEnabler.dispatchEvent(clickEvent);
-                clearInterval(intervalId);
+            logDebug("Scroll to comments section.");
 
-                logDebug("Clicked comments enabler.");
-            }, 3000);
+            const intervalId = setInterval(() => {
+                const commentsEnabler = document.querySelector("#placeholder-area");
+                logDebug('Comments enabler selected.');
+                if (commentsEnabler) {
+                    clearInterval(intervalId);
+                    commentsEnabler.click();
+                    logDebug("Clicked comments enabler.");
+                } else {
+                    logDebug("Comments enabler not found yet, waiting...");
+                }
+            }, 1000);
         } else {
-            logDebug("Comments enabler not found!");
+            logDebug("Comments section not found!");
         }
     };
 
@@ -201,15 +206,15 @@
     const saveSettings = () => {
         const language = document.getElementById('ytAutoCommentLanguage').value;
         const watchPercentage = parseInt(document.getElementById('ytAutoCommentWatchPercentage').value, 10);
-    
+
         GM_setValue('language', language);
         GM_setValue('watchPercentage', watchPercentage);
-    
+
         SELECTED_LANGUAGE = language;
         WATCH_PERCENTAGE = watchPercentage;
-    
+
         alert('Settings saved and applied!');
-    
+
         closeSettingsDialog();
     };
 
