@@ -1,4 +1,5 @@
 .profiles/
 FIRST_RUN.*
 LAST_VIDEO.*
+discord-webhook
 start-*.sh
