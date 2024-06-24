@@ -13,6 +13,7 @@ See `INSTALLING` for first setup and additional tweaking like auto-liking & auto
 ### Dependencies
 
 * `git`
+* `curl`
 * `yt-dlp`
 * `firefox`
 
@@ -24,10 +25,11 @@ See `INSTALLING` for first setup and additional tweaking like auto-liking & auto
 
 * `bash ytw.sh ChannelName` # Use channel name from behind `@` eg. https://youtube.com/@ChannelName
 * Carefully read the instructions if running the script the first time for a channel.
+* Optional: For `Discord` notifications create a file called `discord-webhook` in the same directory as `ytw.sh` with the web URL as its content.
 
 ### Importent notes
 
-If have more than one YouTube channel, YouTube oftens tends to switch to your standard (default) YouTube channel for watching for unknown reasons even if you already switched (back) to another one. To solve this set your desired channel to the default one under `Settings > Advanced Settings`.
+If you have more than one YouTube channel, YouTube often tends to switch to your standard (default) YouTube channel for watching for unknown reasons even if you already switched (back) to another one. To solve this set your desired channel to the default one under `Settings > Advanced Settings`.
 
 ## License
 

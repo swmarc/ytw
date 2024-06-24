@@ -30,6 +30,7 @@ ywt.lib.dependency.check_commands () {
 ywt.lib.dependency.check_install () {
   declare -A MAPPING
   local MAPPING=(
+    ["curl"]="curl"
     ["yt-dlp"]="yt-dlp"
     ["firefox"]="firefox"
   )
