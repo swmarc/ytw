@@ -2,15 +2,13 @@
 
 set -eu
 
-CWD_LIB_HOOKS_DISCORD="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
-
 ytw.lib.hooks.discord.hook() {
     local TITLE="${1}"
     local BODY="${2}"
     local YOUTUBE_VIDEO_ID="${3}"
     local YOUTUBE_VIDEO_LINK="https://www.youtube.com/watch?v="
-    local YOUTUBE_IMAGE_LINK="https://i3.ytimg.com/vi"
-    local YOUTUBE_IMAGE_FILE="maxresdefault.jpg"
+    local YOUTUBE_IMAGE_LINK="https://i.ytimg.com/vi"
+    local YOUTUBE_IMAGE_FILE="hqdefault.jpg"
     local DATETIME=""
     
     if [ -z "${DISCORD_WEBHOOK}" ]; then
@@ -19,7 +17,7 @@ ytw.lib.hooks.discord.hook() {
     
     while true; do
         DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-        printf "[+++] %s Calling Discord hook.\n" ${DATETIME}
+        echo -n "[+++] ${DATETIME} Calling Discord hook."
         
         curl -0 -S -s -o /dev/null -X POST "${DISCORD_WEBHOOK}" \
         -H "Expect:" \
