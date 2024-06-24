@@ -6,8 +6,12 @@ set -eu -o pipefail
 
 CWD="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
+# shellcheck source=lib/dependency.sh
 source "${CWD}/lib/dependency.sh"
 ywt.lib.dependency.check_install
+
+# shellcheck source=lib/hooks/discord.sh
+source "${CWD}/lib/hooks/discord.sh"
 
 DEBUG=${DEBUG:-0}
 TMP_DIR=$(mktemp -d)
@@ -36,6 +40,11 @@ PLAYLIST_ENTRY_LIMIT_INIT=10
 #          Using the native YouTube speed up is the safer alternative.
 #          If unsure set to 1 for best compatibility.
 YOUTUBE_PLAYBACK_SPEED=1
+
+DISCORD_WEBHOOK=""
+if [ -f "${CWD}/discord-webhook" ]; then
+    DISCORD_WEBHOOK=$(cat "${CWD}/discord-webhook")
+fi
 
 # Cleanup any filesystem changes regardless how the script has quit.
 cleanup () {
@@ -78,6 +87,7 @@ get_sleep_by_duration () {
     # Actually prints a warning, but unknown why. For now it works as expected.
     DURATION=$(printf "%.0f" "$(echo "$DURATION_BUFFER+($DURATION/60/$YOUTUBE_PLAYBACK_SPEED)" | bc -l)")
 
+    # shellcheck disable=SC2086
     printf "%d" $DURATION
 }
 
@@ -86,10 +96,11 @@ get_sleep_by_duration () {
 cool_down_queue () {
     local DURATION
     # Set randomly between 3 to 13 minutes.
-    DURATION=$(echo $(($RANDOM%(13-3+1)+3)))
+    DURATION=$(echo $((RANDOM%(13-3+1)+3)))
 
     DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
     echo "[+++] ${DATETIME} Cool down video queue for channel '${CHANNEL_NAME}'."
+    # shellcheck disable=SC2086
     sleep_minutes $DURATION
 }
 
@@ -136,7 +147,7 @@ if [ ! -f "${FILE_CHANNEL_FIRST_RUN}" ]; then
     "If done, close Firefox with CTRL-Q and uncheck the box for asking in future when closing Firefox." \
     "" \
     "If you're ready press enter to start."
-    read REPLY
+    read -r REPLY
     mkdir -p "${FIREFOX_PROFILES}/${CHANNEL_NAME}"
     firefox -CreateProfile "${CHANNEL_NAME}" --profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" https://youtube.com/
     truncate -s 0 "${FILE_CHANNEL_FIRST_RUN}"
@@ -206,6 +217,12 @@ while true; do
         YOUTUBE_ID=$(echo "${WATCH_ENTRY}" | cut -d' ' -f1)
         YOUTUBE_URL=$(echo "${WATCH_ENTRY}" | cut -d' ' -f2)
 
+        YOUTUBE_VIDEO_ID=$(echo "${YOUTUBE_URL}" | rev | cut -d'/' -f 1 | rev)
+        ytw.lib.hooks.discord.hook \
+            "[${CHANNEL_NAME}]" \
+            "Start watching video with ID \`${YOUTUBE_VIDEO_ID}\`." \
+            "${YOUTUBE_VIDEO_ID}"
+
         DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
         echo "[+++] ${DATETIME} Starting Firefox instance with URL '${YOUTUBE_URL}'."
 
@@ -219,10 +236,12 @@ while true; do
 
             DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
             echo "[***] ${DATETIME} Waiting ${FIREFOX_INSTANCE_LIFETIME}m before gracefully closing Firefox."
+            # shellcheck disable=SC2086
             sleep_minutes $FIREFOX_INSTANCE_LIFETIME
 
             DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
             echo "[+++] ${DATETIME} Gracefully killing Firefox with SIGTERM."
+            # shellcheck disable=SC2086
             kill -15 $PID
         fi
 
