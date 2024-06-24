@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         YouTube Auto Like After Watch Time
 // @namespace    http://tampermonkey.net/
-// @version      1.0.1
+// @version      1.0.2
 // @description  Automatically likes a YouTube video after watching a specified percentage
 // @author       swmarc
-// @downloadurl  https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-like.user.js
-// @updateurl    https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-like.user.js
+// @downloadURL  https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-like.user.js
+// @updateURL    https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-like.user.js
 // @match        https://www.youtube.com/watch*
 // @grant        none
 // ==/UserScript==

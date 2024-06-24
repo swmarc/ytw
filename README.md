@@ -31,6 +31,11 @@ See `INSTALLING` for first setup and additional tweaking like auto-liking & auto
 
 If you have more than one YouTube channel, YouTube often tends to switch to your standard (default) YouTube channel for watching for unknown reasons even if you already switched (back) to another one. To solve this set your desired channel to the default one under `Settings > Advanced Settings`.
 
+## Todo
+
+* Implement `GM_config` for language selection for auto-comment script.
+* Implement `Firefox` profile template and apply that one to new profiles.
+
 ## License
 
 This project is licensed under the MIT License - see the `LICENSE` file for details.
