@@ -19,23 +19,19 @@ ytw.lib.sleep.seconds() {
         fi
 
         DATETIME=$(ytw.lib.datetime.get)
-        echo -ne "\033[1K\r"
-        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]") "
-        echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-        echo -n "Sleeping for "
-        echo -ne "$(ytw.lib.print.blue_light "${i}") "
-        echo -n "second${PREFIX}."
+        echo -ne \
+            "\033[1K\r$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
+            "$(ytw.lib.print.bold "[${DATETIME}]")" \
+            "Sleeping for $(ytw.lib.print.blue_light "${i}") second${PREFIX}."
 
         sleep 1
     done
 
     DATETIME=$(ytw.lib.datetime.get)
-    echo -ne "\033[1K\r"
-    echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]") "
-    echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-    echo -n "Sleeping for "
-    echo -ne "$(ytw.lib.print.blue_light 0) "
-    echo "seconds."
+    echo -e \
+        "\033[1K\r$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
+        "$(ytw.lib.print.bold "[${DATETIME}]")" \
+        "Sleeping for $(ytw.lib.print.blue_light 0) seconds."
 }
 
 ytw.lib.sleep.minutes() {
@@ -48,12 +44,10 @@ ytw.lib.sleep.minutes() {
         fi
 
         DATETIME=$(ytw.lib.datetime.get)
-        echo -ne "\033[1K\r"
-        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]") "
-        echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-        echo -n "Sleeping for "
-        echo -ne "$(ytw.lib.print.blue_light "${i}") "
-        echo -n "minutes."
+        echo -ne \
+            "\033[1K\r$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
+            "$(ytw.lib.print.bold "[${DATETIME}]")" \
+            "Sleeping for $(ytw.lib.print.blue_light "${i}") minutes."
 
         sleep 60
     done
