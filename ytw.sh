@@ -17,7 +17,8 @@ DEBUG=${DEBUG:-0}
 TMP_DIR=$(mktemp -d)
 CHANNEL_NAME=${1:-""}
 FIREFOX_PROFILES="${CWD}/.profiles"
-FIREFOX_COMMAND="firefox --profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}" --new-instance"
+FIREFOX_OPTIONS="--profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}" --new-instance --window-size=1600,900 --headless"
+FIREFOX_COMMAND="firefox ${FIREFOX_OPTIONS}"
 FILE_CHANNEL_FIRST_RUN="${CWD}/FIRST_RUN.${CHANNEL_NAME}"
 FILE_CHANNEL_LAST_VIDEO="${CWD}/LAST_VIDEO.${CHANNEL_NAME}"
 CHANNEL_LAST_VIDEO=""
@@ -43,6 +44,7 @@ YOUTUBE_PLAYBACK_SPEED=1
 
 DISCORD_WEBHOOK=""
 if [ -f "${CWD}/discord-webhook" ]; then
+    # shellcheck disable=SC2034
     DISCORD_WEBHOOK=$(cat "${CWD}/discord-webhook")
 fi
 
@@ -58,16 +60,15 @@ print_iteration () {
     local TOTAL=${2}
     local LEFT=$(( TOTAL - CURRENT ))
 
-    printf '%b%b%b%b%b%b%b%b%b' \
-        '[I:' \
+    printf '%s%d%s%s%d%s%s%d' \
+        'Iteration:' \
         "${CURRENT}" \
         ' ' \
-        'L:' \
+        'Left:' \
         "${LEFT}" \
         ' ' \
-        'T:' \
-        "${TOTAL}" \
-        ']'
+        'Total:' \
+        "${TOTAL}"
 }
 
 # Calculate and sleep processing the video list depending on the duration of a video.
@@ -100,9 +101,7 @@ get_sleep_by_duration () {
     # Set fixed amount of 2 minutes.
     DURATION_BUFFER=2
 
-    # @todo
-    # Actually prints a warning, but unknown why. For now it works as expected.
-    DURATION=$(printf "%.0f" "$(echo "$DURATION_BUFFER+($DURATION/60/$YOUTUBE_PLAYBACK_SPEED)" | bc -l)")
+    DURATION=$(echo "scale=0; $DURATION_BUFFER+($DURATION/60/$YOUTUBE_PLAYBACK_SPEED)" | bc -l)
 
     # shellcheck disable=SC2086
     printf "%d" $DURATION
@@ -143,7 +142,7 @@ if [ ! -f "${FILE_CHANNEL_FIRST_RUN}" ]; then
             &>/dev/null
     } || {
         DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-        printf "[!!!] ${DATETIME} YouTube channel '%s' does not exist. Exiting.\n" "${CHANNEL_NAME}"
+        printf "[!!!] %s YouTube channel '%s' does not exist. Exiting.\n" "${DATETIME}" "${CHANNEL_NAME}"
         exit 1
     }
 
@@ -243,7 +242,9 @@ while true; do
             "${YOUTUBE_VIDEO_ID}"
 
         DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-        echo "[+++] ${DATETIME} $(print_iteration "${ITERATION}" "${ITERATION_TOTAL}") Starting Firefox instance with URL '${YOUTUBE_URL}'."
+        echo "[+++] ${DATETIME} Starting Firefox instance with URL '${YOUTUBE_URL}'."
+        echo "[+++] ${DATETIME} $(print_iteration "${ITERATION}" "${ITERATION_TOTAL}")"
+        exit
 
         # Starts a Firefox instance with a video from the playlist and closes Firefox
         # after the duration of the video with some small buffer.
