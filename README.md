@@ -33,8 +33,8 @@ If you have more than one YouTube channel, YouTube often tends to switch to your
 
 ## Todo
 
-* Implement `GM_config` for language selection for auto-comment script.
 * Implement `Firefox` profile template and apply that one to new profiles.
+* Colored pretty print shell output.
 
 ## License
 
