@@ -5,6 +5,7 @@
 set -eu -o pipefail
 
 CWD="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+SCRIPT=$(basename "${BASH_SOURCE[0]}" .sh)
 
 # shellcheck source=lib/dependency.sh
 source "${CWD}/lib/dependency.sh"
@@ -19,11 +20,72 @@ source "${CWD}/lib/print.sh"
 # shellcheck source=lib/sleep.sh
 source "${CWD}/lib/sleep.sh"
 
-DEBUG=${DEBUG:-0}
+script_usage() {
+    echo "Usage: ${SCRIPT} [OPTIONS] YtChannelName"
+    echo ""
+    echo "Options:"
+    echo "  -h, --help   Print this help text and exit."
+    echo "  -d, --debug  Starts Firefox without scraping any videos. Implies -g."
+    echo "  -g, --g      Starts Firefox in non-headless mode."
+}
+
+OPT_DEBUG=0
+OPT_GUI="--headless"
+OPT_STACK_TRACE=0
+CHANNEL_NAME=""
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+    -h | --help)
+        script_usage
+        exit 0
+        ;;
+    -d | --debug)
+        OPT_DEBUG=1
+        OPT_GUI=""
+        shift
+        ;;
+    -g | --gui)
+        OPT_GUI=""
+        shift
+        ;;
+    -x | --trace)
+        OPT_STACK_TRACE=1
+        shift
+        ;;
+    --)
+        break
+        ;;
+    -*)
+        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]") "
+        echo "Invalid option '${1}'."
+        exit 1
+        ;;
+    *)
+        if [ "$#" -gt 1 ]; then
+            echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]") "
+            echo "Too many arguments for YtChannelName."
+            exit 1
+        fi
+        CHANNEL_NAME="$1"
+        break
+        ;;
+    esac
+done
+
+if [ -z "${CHANNEL_NAME}" ]; then
+    echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]") "
+    echo "Missing YouTube Channel Name."
+    script_usage
+    exit 1
+fi
+
+if [ $OPT_STACK_TRACE -eq 1 ]; then
+    set -o xtrace
+fi
+
 TMP_DIR=$(mktemp -d)
-CHANNEL_NAME=${1:-""}
 FIREFOX_PROFILES="${CWD}/.profiles"
-FIREFOX_OPTIONS="--profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}" --no-remote --window-size=1600,900 --headless"
+FIREFOX_OPTIONS="--profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}" --no-remote --window-size=1600,900 ${OPT_GUI}"
 FIREFOX_COMMAND="firefox ${FIREFOX_OPTIONS}"
 FILE_CHANNEL_FIRST_RUN="${CWD}/FIRST_RUN.${CHANNEL_NAME}"
 FILE_CHANNEL_LAST_VIDEO="${CWD}/LAST_VIDEO.${CHANNEL_NAME}"
@@ -93,16 +155,16 @@ ytw.main.cool_down_queue() {
     ytw.lib.sleep.minutes $DURATION
 }
 
-if [ -z "${CHANNEL_NAME}" ]; then
+if [ $OPT_DEBUG -eq 1 ]; then
     DATETIME=$(ytw.lib.datetime.get)
-    echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]") "
+    echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]") "
     echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-    echo "Missing YouTube channel name. Exiting."
-    exit 1
-fi
-
-if [ $DEBUG -eq 1 ]; then
-    firefox --profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}"
+    echo "Starting Firefox instance in non-headless, non-scraping mode."
+    firefox \
+        --no-remote \
+        --profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" \
+        -P "${CHANNEL_NAME}" \
+    &>/dev/null
 
     exit 0
 fi
