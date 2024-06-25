@@ -1,4 +1,6 @@
-.profiles/
+.profiles/*
+!.profiles/ProfileTemplate/
+!.profiles/ProfileTemplate/**
 FIRST_RUN.*
 LAST_VIDEO.*
 discord-webhook
