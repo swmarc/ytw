@@ -12,6 +12,12 @@ ywt.lib.dependency.check_install
 
 # shellcheck source=lib/hooks/discord.sh
 source "${CWD}/lib/hooks/discord.sh"
+# shellcheck source=lib/datetime.sh
+source "${CWD}/lib/datetime.sh"
+# shellcheck source=lib/print.sh
+source "${CWD}/lib/print.sh"
+# shellcheck source=lib/sleep.sh
+source "${CWD}/lib/sleep.sh"
 
 DEBUG=${DEBUG:-0}
 TMP_DIR=$(mktemp -d)
@@ -49,49 +55,14 @@ if [ -f "${CWD}/discord-webhook" ]; then
 fi
 
 # Cleanup any filesystem changes regardless how the script has quit.
-cleanup () {
+cleanup() {
     rm -rf "${TMP_DIR:?}"
 }
 trap cleanup EXIT
 trap cleanup SIGINT
 
-print_iteration () {
-    local CURRENT=${1}
-    local TOTAL=${2}
-    local LEFT=$(( TOTAL - CURRENT ))
-
-    printf '%s%d%s%s%d%s%s%d' \
-        'Iteration:' \
-        "${CURRENT}" \
-        ' ' \
-        'Left:' \
-        "${LEFT}" \
-        ' ' \
-        'Total:' \
-        "${TOTAL}"
-}
-
-# Calculate and sleep processing the video list depending on the duration of a video.
-sleep_minutes () {
-    local MINUTES=$1
-    local ITERATION=0 MINUTE=0 SUFFIX="s"
-    local PROGRESS_PERC=0
-
-    for ((MINUTE = MINUTES; MINUTE > 0; MINUTE--)); do
-        PROGRESS_PERC=$(bc <<< "100 * $ITERATION  / $MINUTES")
-        if [ $MINUTE -eq 1 ]; then
-            SUFFIX=""
-        fi
-
-        DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-        echo -ne "[***] ${DATETIME} Sleeping for $MINUTE minute${SUFFIX} (${PROGRESS_PERC}%).\r"
-        ITERATION=$((ITERATION + 1))
-        sleep 60
-    done
-}
-
 # Get the time to sleep until gracefully closing Firefox.
-get_sleep_by_duration () {
+ytw.main.get_sleep_by_duration() {
     local YOUTUBE_URL=$1
     # Duration in seconds.
     local DURATION
@@ -109,20 +80,24 @@ get_sleep_by_duration () {
 
 # Unknown if this is necessary, but maybe it prevents some sort of detection if the next video
 # plays immediately.
-cool_down_queue () {
+ytw.main.cool_down_queue() {
     local DURATION
     # Set randomly between 3 to 13 minutes.
-    DURATION=$(echo $((RANDOM%(13-3+1)+3)))
+    DURATION=$(echo $((RANDOM % (13 - 3 + 1) + 3)))
 
-    DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-    echo "[+++] ${DATETIME} Cool down video queue for channel '${CHANNEL_NAME}'."
+    DATETIME=$(ytw.lib.datetime.get)
+    echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]") "
+    echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
+    echo -e "Cool down video queue for channel '$(ytw.lib.print.blue_light "${CHANNEL_NAME}")'."
     # shellcheck disable=SC2086
-    sleep_minutes $DURATION
+    ytw.lib.sleep.minutes $DURATION
 }
 
 if [ -z "${CHANNEL_NAME}" ]; then
-    DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-    printf "%s\n" "[!!!] ${DATETIME} Missing YouTube channel name. Exiting."
+    DATETIME=$(ytw.lib.datetime.get)
+    echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]") "
+    echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
+    echo "Missing YouTube channel name. Exiting."
     exit 1
 fi
 
@@ -141,36 +116,43 @@ if [ ! -f "${FILE_CHANNEL_FIRST_RUN}" ]; then
             "https://youtube.com/@${CHANNEL_NAME}/videos" \
             &>/dev/null
     } || {
-        DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-        printf "[!!!] %s YouTube channel '%s' does not exist. Exiting.\n" "${DATETIME}" "${CHANNEL_NAME}"
+        DATETIME=$(ytw.lib.datetime.get)
+        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]") "
+        echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
+        echo -n "YouTube channel "
+        echo -ne "'$(ytw.lib.print.blue_light "${CHANNEL_NAME}")' "
+        echo "does not exist. Exiting."
         exit 1
     }
 
-    printf "%s\n"  \
-    "Thanks for supporting '${CHANNEL_NAME}' and please read the following carefully." \
-    "" \
-    "First we need to start a new Firefox instance were from within you need to login to your Google account and" \
-    "select your desired YouTube channel you want to use." \
-    "Without closing Firefox I suggest installing a couple of curated extensions:" \
-    ' - "uBlock Origin": Blocking Ads.' \
-    ' - "Enhancer for YouTube": Raise playback speed, lower video resolution, ...'\
-    ' - "BlockTube": Blocking Ads.' \
-    ' - "Ad Speedup - Skip Video Ads Faster": Skips Ads with playback speed of 16 (or faster).' \
-    ' - "Tampermonkey Scripts":' \
-    '      "Auto like":    https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-like.user.js' \
-    '      "Auto comment": https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-comment.user.js' \
-    "" \
-    "If done, close Firefox with CTRL-Q and uncheck the box for asking in future when closing Firefox." \
-    "" \
-    "If you're ready press enter to start."
+    printf "%s\n" \
+        "Thanks for supporting '${CHANNEL_NAME}' and please read the following carefully." \
+        "" \
+        "First we need to start a new Firefox instance were from within you need to login to your Google account and" \
+        "select your desired YouTube channel you want to use." \
+        "Without closing Firefox I suggest installing a couple of curated extensions:" \
+        ' - "uBlock Origin": Blocking Ads.' \
+        ' - "Enhancer for YouTube": Raise playback speed, lower video resolution, ...' \
+        ' - "BlockTube": Blocking Ads.' \
+        ' - "Ad Speedup - Skip Video Ads Faster": Skips Ads with playback speed of 16 (or faster).' \
+        ' - "Tampermonkey Scripts":' \
+        '      "Auto like":    https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-like.user.js' \
+        '      "Auto comment": https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-comment.user.js' \
+        "" \
+        "If done, close Firefox with CTRL-Q and uncheck the box for asking in future when closing Firefox." \
+        "" \
+        "If you're ready press enter to start."
     read -r REPLY
     mkdir -p "${FIREFOX_PROFILES}/${CHANNEL_NAME}"
     firefox -CreateProfile "${CHANNEL_NAME}" --profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" https://youtube.com/
     truncate -s 0 "${FILE_CHANNEL_FIRST_RUN}"
 fi
 
-DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-echo "[***] ${DATETIME} Processing YouTube channel '${CHANNEL_NAME}'."
+DATETIME=$(ytw.lib.datetime.get)
+echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]") "
+echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
+echo -n "Processing YouTube channel "
+echo -e "'$(ytw.lib.print.blue_light "${CHANNEL_NAME}")'."
 while true; do
     # yt-dlp seems to append the playlist instead of overwriting it,
     # so delete the playlist from possible previous loop.
@@ -189,8 +171,11 @@ while true; do
     fi
 
     # Fetch new list of videos.
-    DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-    echo "[+++] ${DATETIME} Fetching videos from channel '${CHANNEL_NAME}'."
+    DATETIME=$(ytw.lib.datetime.get)
+    echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]") "
+    echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
+    echo -n "Fetching videos from channel "
+    echo -e "'$(ytw.lib.print.blue_light "${CHANNEL_NAME}")'."
     {
         yt-dlp \
             --lazy-playlist \
@@ -200,8 +185,12 @@ while true; do
             https://www.youtube.com/@${CHANNEL_NAME}/videos \
             1>/dev/null
     } || {
-        DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-        printf "[!!!] ${DATETIME} Couldn't fetch videos from channel '%s'. See error(s) above. Exiting.\n" "${CHANNEL_NAME}"
+        DATETIME=$(ytw.lib.datetime.get)
+        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]") "
+        echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
+        echo -n "Couldn't fetch videos from channel "
+        echo -ne "'$(ytw.lib.print.blue_light "${CHANNEL_NAME}")'. "
+        echo "See error(s) above. Exiting."
         exit 1
     }
 
@@ -214,18 +203,22 @@ while true; do
     if [ -n "${CHANNEL_LAST_VIDEO}" ]; then
         # Order from oldest to newest video.
         WATCH_ENTRIES=$(
-            tac "${TMP_DIR}/playlist" \
-            | grep -F -A $PLAYLIST_ENTRY_LIMIT "${CHANNEL_LAST_VIDEO}" \
-            | grep -v "${CHANNEL_LAST_VIDEO}" \
-            || true
+            tac "${TMP_DIR}/playlist" |
+                grep -F -A $PLAYLIST_ENTRY_LIMIT "${CHANNEL_LAST_VIDEO}" |
+                grep -v "${CHANNEL_LAST_VIDEO}" ||
+                true
         )
     fi
 
     # Cool down processing channel videos for 2h if no new videos are available yet.
     if [ -z "${WATCH_ENTRIES}" ]; then
-        DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-        echo "[***] ${DATETIME} No new videos for channel '${CHANNEL_NAME}'. Sleeping for 120m."
-        sleep_minutes 120
+        DATETIME=$(ytw.lib.datetime.get)
+        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]") "
+        echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
+        echo -n "No new videos for channel "
+        echo -ne "'$(ytw.lib.print.blue_light "${CHANNEL_NAME}")'. "
+        echo "Sleeping for 120m."
+        ytw.lib.sleep.minutes 120
         continue
     fi
 
@@ -241,27 +234,36 @@ while true; do
             "Start watching video with ID \`${YOUTUBE_VIDEO_ID}\`." \
             "${YOUTUBE_VIDEO_ID}"
 
-        DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-        echo "[+++] ${DATETIME} Starting Firefox instance with URL '${YOUTUBE_URL}'."
-        echo "[+++] ${DATETIME} $(print_iteration "${ITERATION}" "${ITERATION_TOTAL}")"
-        exit
+        DATETIME=$(ytw.lib.datetime.get)
+        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]") "
+        echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
+        echo -n "Starting Firefox instance with URL "
+        echo -ne "'$(ytw.lib.print.blue_light "${YOUTUBE_URL}")'. "
+        echo -e "$(ytw.lib.print.iteration "${ITERATION}" "${ITERATION_TOTAL}")"
 
         # Starts a Firefox instance with a video from the playlist and closes Firefox
         # after the duration of the video with some small buffer.
         if [ $FIREFOX_IS_SELF_CLOSING -eq 0 ]; then
-            FIREFOX_INSTANCE_LIFETIME=$(get_sleep_by_duration "${YOUTUBE_URL}")
+            FIREFOX_INSTANCE_LIFETIME=$(ytw.main.get_sleep_by_duration "${YOUTUBE_URL}")
 
             exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
             PID=$(echo $!)
 
-            DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-            echo "[***] ${DATETIME} Waiting ${FIREFOX_INSTANCE_LIFETIME}m before gracefully closing Firefox."
+            DATETIME=$(ytw.lib.datetime.get)
+            echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]") "
+            echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
+            echo -n "Waiting "
+            echo -ne "$(ytw.lib.print.blue_light "${FIREFOX_INSTANCE_LIFETIME}") "
+            echo "minutes before gracefully closing Firefox."
             # shellcheck disable=SC2086
-            sleep_minutes $FIREFOX_INSTANCE_LIFETIME
+            ytw.lib.sleep.minutes $FIREFOX_INSTANCE_LIFETIME
 
-            DATETIME=$(echo "[$(date -u --rfc-3339=seconds)]")
-            echo "[+++] ${DATETIME} Gracefully killing Firefox with SIGTERM."
-            # shellcheck disable=SC2086
+            DATETIME=$(ytw.lib.datetime.get)
+            echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]") "
+            echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
+            echo -n "Gracefully killing Firefox with "
+            echo -e "$(ytw.lib.print.blue_light "SIGTERM")."
+            shellcheck disable=SC2086
             kill -15 $PID
         fi
 
@@ -272,10 +274,10 @@ while true; do
         fi
 
         # Remember the last fully watched video.
-        printf '%s' "${YOUTUBE_ID}" > "${FILE_CHANNEL_LAST_VIDEO}"
+        printf '%s' "${YOUTUBE_ID}" >"${FILE_CHANNEL_LAST_VIDEO}"
         ITERATION=$((ITERATION + 1))
 
         # Cool down queue.
-        cool_down_queue
+        ytw.main.cool_down_queue
     done <<<"${WATCH_ENTRIES[@]}"
 done
