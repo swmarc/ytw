@@ -22,7 +22,7 @@ ytw.lib.sleep.seconds() {
         echo -ne \
             "\033[1K\r$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
             "$(ytw.lib.print.bold "[${DATETIME}]")" \
-            "Sleeping for $(ytw.lib.print.blue_light "${i}") second${PREFIX}."
+            "$(ytw.lib.print.blue_light "${i}") second${PREFIX} remaining."
 
         sleep 1
     done
@@ -31,7 +31,7 @@ ytw.lib.sleep.seconds() {
     echo -e \
         "\033[1K\r$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
         "$(ytw.lib.print.bold "[${DATETIME}]")" \
-        "Sleeping for $(ytw.lib.print.blue_light 0) seconds."
+        "$(ytw.lib.print.blue_light 0) seconds remaining."
 }
 
 ytw.lib.sleep.minutes() {
@@ -47,7 +47,7 @@ ytw.lib.sleep.minutes() {
         echo -ne \
             "\033[1K\r$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
             "$(ytw.lib.print.bold "[${DATETIME}]")" \
-            "Sleeping for $(ytw.lib.print.blue_light "${i}") minutes."
+            "$(ytw.lib.print.blue_light "${i}") minutes remaining."
 
         sleep 60
     done
