@@ -23,7 +23,7 @@ DEBUG=${DEBUG:-0}
 TMP_DIR=$(mktemp -d)
 CHANNEL_NAME=${1:-""}
 FIREFOX_PROFILES="${CWD}/.profiles"
-FIREFOX_OPTIONS="--profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}" --new-instance --window-size=1600,900 --headless"
+FIREFOX_OPTIONS="--profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}" --no-remote --window-size=1600,900 --headless"
 FIREFOX_COMMAND="firefox ${FIREFOX_OPTIONS}"
 FILE_CHANNEL_FIRST_RUN="${CWD}/FIRST_RUN.${CHANNEL_NAME}"
 FILE_CHANNEL_LAST_VIDEO="${CWD}/LAST_VIDEO.${CHANNEL_NAME}"
@@ -144,7 +144,11 @@ if [ ! -f "${FILE_CHANNEL_FIRST_RUN}" ]; then
         "If you're ready press enter to start."
     read -r REPLY
     mkdir -p "${FIREFOX_PROFILES}/${CHANNEL_NAME}"
-    firefox -CreateProfile "${CHANNEL_NAME}" --profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" https://youtube.com/
+    firefox \
+        --no-remote \
+        -CreateProfile "${CHANNEL_NAME}" \
+        --profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" \
+        https://youtube.com/
     truncate -s 0 "${FILE_CHANNEL_FIRST_RUN}"
 fi
 
