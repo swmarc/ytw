@@ -91,6 +91,8 @@ if [ $OPT_STACK_TRACE -eq 1 ]; then
 fi
 
 TMP_DIR=$(mktemp -d)
+RUNNER_OPTIONS="Runner options:"
+RUNNER_OPTIONS_LENGTH=$(printf "%s" "${RUNNER_OPTIONS}" | wc -m)
 FIREFOX_PROFILES="${CWD}/.profiles"
 FIREFOX_OPTIONS="--profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}" --no-remote --new-instance --window-size=1600,900 ${OPT_GUI}"
 FIREFOX_COMMAND="firefox ${FIREFOX_OPTIONS}"
@@ -262,8 +264,22 @@ if [ ! -f "${FILE_CHANNEL_FIRST_RUN}" ]; then
     exit 0
 fi
 
+if [ -n "${OPT_GUI}" ]; then
+    RUNNER_OPTIONS+=" $(ytw.lib.print.yellow "Headless"),"
+fi
+
 if [ $OPT_DRY_RUN -eq 1 ]; then
-    ytw.main.print.status.info "Starting in '$(ytw.lib.print.red "Dry Run")' mode."
+    RUNNER_OPTIONS+=" $(ytw.lib.print.yellow "Dry Run"),"
+fi
+
+if [ $OPT_STACK_TRACE -eq 1 ]; then
+    RUNNER_OPTIONS+=" $(ytw.lib.print.yellow "Dry Run"),"
+fi
+
+# shellcheck disable=SC2046
+# shellcheck disable=SC2086
+if [ $(printf "%s" "${RUNNER_OPTIONS}" | wc -m)  -gt $RUNNER_OPTIONS_LENGTH ]; then
+    ytw.main.print.status.info "$(printf "%s" "${RUNNER_OPTIONS}" | rev | cut -c 2- | rev)"
 fi
 
 while true; do
