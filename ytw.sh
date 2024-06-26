@@ -17,6 +17,8 @@ source "${CWD}/lib/hooks/discord.sh"
 source "${CWD}/lib/datetime.sh"
 # shellcheck source=lib/print.sh
 source "${CWD}/lib/print.sh"
+# shellcheck source=lib/profile.sh
+source "${CWD}/lib/profile.sh"
 # shellcheck source=lib/sleep.sh
 source "${CWD}/lib/sleep.sh"
 
@@ -137,7 +139,7 @@ ytw.main.print.status() {
     echo -ne "${STATUS} "
     echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
     echo -ne "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")] "
-    
+
     for STRING in "$STRINGS"; do
         echo -ne "${STRING}"
     done
@@ -226,34 +228,36 @@ if [ ! -f "${FILE_CHANNEL_FIRST_RUN}" ]; then
     }
 
     printf "%s\n" \
-        "Thanks for supporting '${CHANNEL_NAME}' and please read the following carefully." \
-        "" \
-        "First we need to start a new Firefox instance were from within you need to login to your Google account and" \
-        "select your desired YouTube channel you want to use." \
-        "Without closing Firefox I suggest installing a couple of curated extensions:" \
-        ' - "uBlock Origin": Blocking Ads.' \
-        ' - "Enhancer for YouTube": Raise playback speed, lower video resolution, ...' \
-        ' - "BlockTube": Blocking Ads.' \
-        ' - "Ad Speedup - Skip Video Ads Faster": Skips Ads with playback speed of 16 (or faster).' \
-        ' - "Tampermonkey Scripts":' \
-        '      "Auto like":    https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-like.user.js' \
-        '      "Auto comment": https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-comment.user.js' \
+        "First time setup for '${CHANNEL_NAME}'." \
+        "Please read the following carefully." \
+        ""
+
+    ytw.lib.profile.create \
+        "${FIREFOX_PROFILES}" \
+        "${CHANNEL_NAME}" \
+        $OPT_DRY_RUN
+
+    printf "%s\n" \
+        "Firefox will now start with the new profile \"${CHANNEL_NAME}\"." \
+        "Login to your Google account and select your desired YouTube channel you want to use." \
+        "Important notes: https://github.com/swmarc/ytw#importent-notes" \
         "" \
         "If done, close Firefox with CTRL-Q and uncheck the box for asking in future when closing Firefox." \
         "" \
         "If you're ready press enter to start."
     read -r REPLY
-    firefox \
-        --no-remote \
-        --new-instance \
-        -CreateProfile "${CHANNEL_NAME} ${FIREFOX_PROFILES}/${CHANNEL_NAME}"
+
+    printf "%s\n" "Starting Firefox..."
     firefox \
         --no-remote \
         --new-instance \
         --profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" \
         -P "${CHANNEL_NAME}" \
-        https://youtube.com/
+        https://youtube.com/ \
+        &>/dev/null
     truncate -s 0 "${FILE_CHANNEL_FIRST_RUN}"
+
+    printf "%s\n" "Setup done. Restart the script with '${SCRIPT} ${CHANNEL_NAME}' and I will do the rest for you. :)"
 
     exit 0
 fi
