@@ -2,12 +2,14 @@
 
 set -eu -o pipefail
 
-CWD_LIB_DEPENDENCY="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+# shellcheck disable=SC2155
+declare -r CWD_LIB_DEPENDENCY="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
 ywt.lib.dependency.check_commands () {
-  local LIST_COMMANDS=${1:-}
-  local EXIT_ON_FAIL=${2:-1}
-  local COMMAND="" FAIL=0
+  local LIST_COMMANDS=${1}
+  local -ri EXIT_ON_FAIL=${2:-1}
+  local COMMAND=""
+  local -i FAIL=0
 
   while read -r -d " " COMMAND; do
     if [ "$(command -v "${COMMAND}" && echo 0 || echo 1)" == 1 ]; then
@@ -27,9 +29,9 @@ ywt.lib.dependency.check_commands () {
 
 
 ywt.lib.dependency.check_install () {
-  declare -A MAPPING
-  local MAPPING=(
+  local -Ar MAPPING=(
     ["curl"]="curl"
+    ["rsync"]="rsync"
     ["yt-dlp"]="yt-dlp"
     ["firefox"]="firefox"
   )

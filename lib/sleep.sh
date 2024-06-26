@@ -1,8 +1,9 @@
 #!/bin/bash
 
-set -eu
+set -eu -o pipefail
 
-YTW_LIB_SLEEP="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+# shellcheck disable=SC2155
+declare -r YTW_LIB_SLEEP="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
 # shellcheck source=datetime.sh
 source "${YTW_LIB_SLEEP}/datetime.sh"
@@ -10,9 +11,9 @@ source "${YTW_LIB_SLEEP}/datetime.sh"
 source "${YTW_LIB_SLEEP}/print.sh"
 
 ytw.lib.sleep.seconds() {
-    local SECONDS=$1
-    local PREFIX=${2:-""}
-    local SUFFIX="s"
+    local -ir SECONDS=$1
+    local -r PREFIX=${2:-""}
+    local DATETIME="" SUFFIX="s"
 
     for ((i = SECONDS; i > 0; i--)); do
         if [ $i -eq 1 ]; then
@@ -38,8 +39,9 @@ ytw.lib.sleep.seconds() {
 }
 
 ytw.lib.sleep.minutes() {
-    local MINUTES=$1
-    local PREFIX=${2:-""}
+    local -ir MINUTES=$1
+    local -r PREFIX=${2:-""}
+    local DATETIME=""
 
     for ((i = MINUTES; i > 0; i--)); do
         if [ $i -eq 1 ]; then

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-set -eu
+set -eu -o pipefail
 
 ytw.lib.datetime.get () {
-    echo "$(date -u +"%y-%m-%d %H:%M:%S")"
+    date -u +"%y-%m-%d %H:%M:%S"
 }
