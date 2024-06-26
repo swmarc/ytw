@@ -85,7 +85,7 @@ fi
 
 TMP_DIR=$(mktemp -d)
 FIREFOX_PROFILES="${CWD}/.profiles"
-FIREFOX_OPTIONS="--profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}" --no-remote --window-size=1600,900 ${OPT_GUI}"
+FIREFOX_OPTIONS="--profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}" --no-remote --new-instance --window-size=1600,900 ${OPT_GUI}"
 FIREFOX_COMMAND="firefox ${FIREFOX_OPTIONS}"
 FILE_CHANNEL_FIRST_RUN="${CWD}/FIRST_RUN.${CHANNEL_NAME}"
 FILE_CHANNEL_LAST_VIDEO="${CWD}/LAST_VIDEO.${CHANNEL_NAME}"
@@ -162,6 +162,7 @@ if [ $OPT_DEBUG -eq 1 ]; then
     echo "Starting Firefox instance in non-headless, non-scraping mode."
     firefox \
         --no-remote \
+        --new-instance \
         --profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" \
         -P "${CHANNEL_NAME}" \
     &>/dev/null
@@ -205,11 +206,15 @@ if [ ! -f "${FILE_CHANNEL_FIRST_RUN}" ]; then
         "" \
         "If you're ready press enter to start."
     read -r REPLY
-    mkdir -p "${FIREFOX_PROFILES}/${CHANNEL_NAME}"
     firefox \
         --no-remote \
-        -CreateProfile "${CHANNEL_NAME}" \
+        --new-instance \
+        -CreateProfile "${CHANNEL_NAME} ${FIREFOX_PROFILES}/${CHANNEL_NAME}"
+    firefox \
+        --no-remote \
+        --new-instance \
         --profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" \
+        -P "${CHANNEL_NAME}" \
         https://youtube.com/
     truncate -s 0 "${FILE_CHANNEL_FIRST_RUN}"
 fi
