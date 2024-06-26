@@ -30,6 +30,7 @@ script_usage() {
 }
 
 OPT_DEBUG=0
+OPT_DRY_RUN=0
 OPT_GUI="--headless"
 OPT_STACK_TRACE=0
 CHANNEL_NAME=""
@@ -42,6 +43,10 @@ while [ "$#" -gt 0 ]; do
     -d | --debug)
         OPT_DEBUG=1
         OPT_GUI=""
+        shift
+        ;;
+    -dr | --dry-run)
+        OPT_DRY_RUN=1
         shift
         ;;
     -g | --gui)
@@ -249,6 +254,12 @@ if [ ! -f "${FILE_CHANNEL_FIRST_RUN}" ]; then
         -P "${CHANNEL_NAME}" \
         https://youtube.com/
     truncate -s 0 "${FILE_CHANNEL_FIRST_RUN}"
+
+    exit 0
+fi
+
+if [ $OPT_DRY_RUN -eq 1 ]; then
+    ytw.main.print.status.info "Starting in '$(ytw.lib.print.red "Dry Run")' mode."
 fi
 
 while true; do
@@ -301,7 +312,7 @@ while true; do
 
     # Cool down processing channel videos for 2h if no new videos are available yet.
     if [ -z "${WATCH_ENTRIES}" ]; then
-        ytw.main.print.status.info "No new videos for channel." "Sleeping for $(ytw.lib.print.blue_light "120")m."
+        ytw.main.print.status.info "No new videos for channel." "Sleeping for $(ytw.lib.print.yellow "120")m."
 
         ytw.lib.sleep.minutes \
             120 \
@@ -316,15 +327,17 @@ while true; do
         YOUTUBE_ID=$(echo "${WATCH_ENTRY}" | cut -d' ' -f1)
         YOUTUBE_URL=$(echo "${WATCH_ENTRY}" | cut -d' ' -f2)
 
-        YOUTUBE_VIDEO_ID=$(echo "${YOUTUBE_URL}" | rev | cut -d'=' -f 1 | rev)
-        ytw.lib.hooks.discord.hook \
-            "[${CHANNEL_NAME}]" \
-            "Start watching video with ID \`${YOUTUBE_VIDEO_ID}\`." \
-            "${YOUTUBE_VIDEO_ID}"
+        if [ $OPT_DRY_RUN -eq 0 ]; then
+            YOUTUBE_VIDEO_ID=$(echo "${YOUTUBE_URL}" | rev | cut -d'=' -f 1 | rev)
+            ytw.lib.hooks.discord.hook \
+                "[${CHANNEL_NAME}]" \
+                "Start watching video with ID \`${YOUTUBE_VIDEO_ID}\`." \
+                "${YOUTUBE_VIDEO_ID}"
+        fi
 
         ytw.main.print.status.ok \
             "Starting Firefox instance with URL" \
-            "'$(ytw.lib.print.blue_light "${YOUTUBE_URL}")'." \
+            "'$(ytw.lib.print.yellow "${YOUTUBE_URL}")'." \
             "$(ytw.lib.print.iteration "${ITERATION}" "${ITERATION_TOTAL}")"
 
         # Starts a Firefox instance with a video from the playlist and closes Firefox
@@ -332,12 +345,14 @@ while true; do
         if [ $FIREFOX_IS_SELF_CLOSING -eq 0 ]; then
             FIREFOX_INSTANCE_LIFETIME=$(ytw.main.get_sleep_by_duration "${YOUTUBE_URL}")
 
-            exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
-            PID=$(echo $!)
+            if [ $OPT_DRY_RUN -eq 0 ]; then
+                exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
+                PID=$(echo $!)
+            fi
 
             ytw.main.print.status.ok \
                 "Waiting" \
-                "$(ytw.lib.print.blue_light "${FIREFOX_INSTANCE_LIFETIME}")" \
+                "$(ytw.lib.print.yellow "${FIREFOX_INSTANCE_LIFETIME}")" \
                 "minutes before gracefully closing Firefox."
 
             # shellcheck disable=SC2086
@@ -347,20 +362,24 @@ while true; do
 
             ytw.main.print.status.ok \
                 "Gracefully killing Firefox with" \
-                "$(ytw.lib.print.blue_light "SIGTERM")."
+                "$(ytw.lib.print.yellow "SIGTERM")."
 
             # shellcheck disable=SC2086
-            kill -15 $PID
+            if [ $OPT_DRY_RUN -eq 0 ]; then
+                kill -15 $PID
+            fi
         fi
 
         # If closing the browser at the end of a video is possible just wait for Firefox
         # exiting itself.
-        if [ $FIREFOX_IS_SELF_CLOSING -eq 1 ]; then
+        if [ $FIREFOX_IS_SELF_CLOSING -eq 1 ] && [ $OPT_DRY_RUN -eq 0 ]; then
             exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null
         fi
 
         # Remember the last fully watched video.
-        printf '%s' "${YOUTUBE_ID}" >"${FILE_CHANNEL_LAST_VIDEO}"
+        if [ $OPT_DRY_RUN -eq 0 ]; then
+            printf '%s' "${YOUTUBE_ID}" >"${FILE_CHANNEL_LAST_VIDEO}"
+        fi
         ITERATION=$((ITERATION + 1))
 
         # Cool down queue.
