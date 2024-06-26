@@ -11,18 +11,20 @@ source "${YTW_LIB_SLEEP}/print.sh"
 
 ytw.lib.sleep.seconds() {
     local SECONDS=$1
-    local PREFIX="s"
+    local PREFIX=${2:-""}
+    local SUFFIX="s"
 
     for ((i = SECONDS; i > 0; i--)); do
         if [ $i -eq 1 ]; then
-            PREFIX=""
+            SUFFIX=""
         fi
 
         DATETIME=$(ytw.lib.datetime.get)
         echo -ne \
             "\033[1K\r$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
             "$(ytw.lib.print.bold "[${DATETIME}]")" \
-            "Sleeping for $(ytw.lib.print.blue_light "${i}") second${PREFIX}."
+            "${PREFIX}" \
+            "$(ytw.lib.print.yellow "${i}") second${SUFFIX} remaining."
 
         sleep 1
     done
@@ -31,11 +33,12 @@ ytw.lib.sleep.seconds() {
     echo -e \
         "\033[1K\r$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
         "$(ytw.lib.print.bold "[${DATETIME}]")" \
-        "Sleeping for $(ytw.lib.print.blue_light 0) seconds."
+        "$(ytw.lib.print.yellow 0) seconds remaining."
 }
 
 ytw.lib.sleep.minutes() {
     local MINUTES=$1
+    local PREFIX=${2:-""}
 
     for ((i = MINUTES; i > 0; i--)); do
         if [ $i -eq 1 ]; then
@@ -47,7 +50,8 @@ ytw.lib.sleep.minutes() {
         echo -ne \
             "\033[1K\r$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
             "$(ytw.lib.print.bold "[${DATETIME}]")" \
-            "Sleeping for $(ytw.lib.print.blue_light "${i}") minutes."
+            "${PREFIX}" \
+            "$(ytw.lib.print.yellow "${i}") minutes remaining."
 
         sleep 60
     done

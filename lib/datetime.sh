@@ -3,5 +3,5 @@
 set -eu
 
 ytw.lib.datetime.get () {
-    echo "$(date -u --rfc-3339=seconds)"
+    echo "$(date -u +"%y-%m-%d %H:%M:%S")"
 }
