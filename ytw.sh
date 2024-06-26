@@ -123,6 +123,46 @@ cleanup() {
 trap cleanup EXIT
 trap cleanup SIGINT
 
+ytw.main.print.status() {
+    local STATUS="$1"
+    shift
+    local STRINGS="$@"
+
+    DATETIME=$(ytw.lib.datetime.get)
+    echo -ne "${STATUS} "
+    echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
+    echo -ne "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")] "
+    
+    for STRING in "$STRINGS"; do
+        echo -ne "${STRING}"
+    done
+    echo ""
+}
+
+ytw.main.print.status.ok() {
+    local STRINGS="$@"
+
+    ytw.main.print.status \
+        "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]")" \
+        "${STRINGS}"
+}
+
+ytw.main.print.status.info() {
+    local STRINGS="$@"
+
+    ytw.main.print.status \
+        "$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
+        "${STRINGS}"
+}
+
+ytw.main.print.status.error() {
+    local STRINGS="$@"
+
+    ytw.main.print.status \
+        "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]")" \
+        "${STRINGS}"
+}
+
 # Get the time to sleep until gracefully closing Firefox.
 ytw.main.get_sleep_by_duration() {
     local YOUTUBE_URL=$1
@@ -147,25 +187,22 @@ ytw.main.cool_down_queue() {
     # Set randomly between 3 to 13 minutes.
     DURATION=$(echo $((RANDOM % (13 - 3 + 1) + 3)))
 
-    DATETIME=$(ytw.lib.datetime.get)
-    echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]") "
-    echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-    echo -e "Cool down video queue for channel '$(ytw.lib.print.blue_light "${CHANNEL_NAME}")'."
+    ytw.main.print.status.ok "Cool down video queue."
+
     # shellcheck disable=SC2086
-    ytw.lib.sleep.minutes $DURATION
+    ytw.lib.sleep.minutes \
+        $DURATION \
+        "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
 }
 
 if [ $OPT_DEBUG -eq 1 ]; then
-    DATETIME=$(ytw.lib.datetime.get)
-    echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]") "
-    echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-    echo "Starting Firefox instance in non-headless, non-scraping mode."
+    ytw.main.print.status.ok "Starting Firefox instance in non-headless, non-scraping mode."
     firefox \
         --no-remote \
         --new-instance \
         --profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" \
         -P "${CHANNEL_NAME}" \
-    &>/dev/null
+        &>/dev/null
 
     exit 0
 fi
@@ -179,12 +216,7 @@ if [ ! -f "${FILE_CHANNEL_FIRST_RUN}" ]; then
             "https://youtube.com/@${CHANNEL_NAME}/videos" \
             &>/dev/null
     } || {
-        DATETIME=$(ytw.lib.datetime.get)
-        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]") "
-        echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-        echo -n "YouTube channel "
-        echo -ne "'$(ytw.lib.print.blue_light "${CHANNEL_NAME}")' "
-        echo "does not exist. Exiting."
+        ytw.main.print.status.error "YouTube channel does not exist. Exiting."
         exit 1
     }
 
@@ -219,11 +251,6 @@ if [ ! -f "${FILE_CHANNEL_FIRST_RUN}" ]; then
     truncate -s 0 "${FILE_CHANNEL_FIRST_RUN}"
 fi
 
-DATETIME=$(ytw.lib.datetime.get)
-echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]") "
-echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-echo -n "Processing YouTube channel "
-echo -e "'$(ytw.lib.print.blue_light "${CHANNEL_NAME}")'."
 while true; do
     # yt-dlp seems to append the playlist instead of overwriting it,
     # so delete the playlist from possible previous loop.
@@ -242,11 +269,7 @@ while true; do
     fi
 
     # Fetch new list of videos.
-    DATETIME=$(ytw.lib.datetime.get)
-    echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]") "
-    echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-    echo -n "Fetching videos from channel "
-    echo -e "'$(ytw.lib.print.blue_light "${CHANNEL_NAME}")'."
+    ytw.main.print.status.ok "Fetching videos from channel."
     {
         yt-dlp \
             --lazy-playlist \
@@ -256,12 +279,7 @@ while true; do
             https://www.youtube.com/@${CHANNEL_NAME}/videos \
             1>/dev/null
     } || {
-        DATETIME=$(ytw.lib.datetime.get)
-        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]") "
-        echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-        echo -n "Couldn't fetch videos from channel "
-        echo -ne "'$(ytw.lib.print.blue_light "${CHANNEL_NAME}")'. "
-        echo "See error(s) above. Exiting."
+        ytw.main.print.status.error "Couldn't fetch videos from channel." "See error(s) above. Exiting."
         exit 1
     }
 
@@ -283,13 +301,12 @@ while true; do
 
     # Cool down processing channel videos for 2h if no new videos are available yet.
     if [ -z "${WATCH_ENTRIES}" ]; then
-        DATETIME=$(ytw.lib.datetime.get)
-        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]") "
-        echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-        echo -n "No new videos for channel "
-        echo -ne "'$(ytw.lib.print.blue_light "${CHANNEL_NAME}")'. "
-        echo "Sleeping for 120m."
-        ytw.lib.sleep.minutes 120
+        ytw.main.print.status.info "No new videos for channel." "Sleeping for $(ytw.lib.print.blue_light "120")m."
+
+        ytw.lib.sleep.minutes \
+            120 \
+            "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+
         continue
     fi
 
@@ -305,12 +322,10 @@ while true; do
             "Start watching video with ID \`${YOUTUBE_VIDEO_ID}\`." \
             "${YOUTUBE_VIDEO_ID}"
 
-        DATETIME=$(ytw.lib.datetime.get)
-        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]") "
-        echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-        echo -n "Starting Firefox instance with URL "
-        echo -ne "'$(ytw.lib.print.blue_light "${YOUTUBE_URL}")'. "
-        echo -e "$(ytw.lib.print.iteration "${ITERATION}" "${ITERATION_TOTAL}")"
+        ytw.main.print.status.ok \
+            "Starting Firefox instance with URL" \
+            "'$(ytw.lib.print.blue_light "${YOUTUBE_URL}")'." \
+            "$(ytw.lib.print.iteration "${ITERATION}" "${ITERATION_TOTAL}")"
 
         # Starts a Firefox instance with a video from the playlist and closes Firefox
         # after the duration of the video with some small buffer.
@@ -320,21 +335,21 @@ while true; do
             exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
             PID=$(echo $!)
 
-            DATETIME=$(ytw.lib.datetime.get)
-            echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]") "
-            echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-            echo -n "Waiting "
-            echo -ne "$(ytw.lib.print.blue_light "${FIREFOX_INSTANCE_LIFETIME}") "
-            echo "minutes before gracefully closing Firefox."
-            # shellcheck disable=SC2086
-            ytw.lib.sleep.minutes $FIREFOX_INSTANCE_LIFETIME
+            ytw.main.print.status.ok \
+                "Waiting" \
+                "$(ytw.lib.print.blue_light "${FIREFOX_INSTANCE_LIFETIME}")" \
+                "minutes before gracefully closing Firefox."
 
-            DATETIME=$(ytw.lib.datetime.get)
-            echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]") "
-            echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-            echo -n "Gracefully killing Firefox with "
-            echo -e "$(ytw.lib.print.blue_light "SIGTERM")."
-            shellcheck disable=SC2086
+            # shellcheck disable=SC2086
+            ytw.lib.sleep.minutes \
+                $FIREFOX_INSTANCE_LIFETIME \
+                "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+
+            ytw.main.print.status.ok \
+                "Gracefully killing Firefox with" \
+                "$(ytw.lib.print.blue_light "SIGTERM")."
+
+            # shellcheck disable=SC2086
             kill -15 $PID
         fi
 
