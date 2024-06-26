@@ -268,13 +268,9 @@ if [ $OPT_DRY_RUN -eq 1 ]; then
     RUNNER_OPTIONS+=" $(ytw.lib.print.yellow "Dry Run"),"
 fi
 
-if [ $OPT_STACK_TRACE -eq 1 ]; then
-    RUNNER_OPTIONS+=" $(ytw.lib.print.yellow "Dry Run"),"
-fi
-
 # shellcheck disable=SC2046
 # shellcheck disable=SC2086
-if [ $(printf "%s" "${RUNNER_OPTIONS}" | wc -m)  -gt $RUNNER_OPTIONS_LENGTH ]; then
+if [ $(printf "%s" "${RUNNER_OPTIONS}" | wc -m) -gt $RUNNER_OPTIONS_LENGTH ]; then
     ytw.main.print.status.info "$(printf "%s" "${RUNNER_OPTIONS}" | rev | cut -c 2- | rev)"
 fi
 
