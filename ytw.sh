@@ -352,7 +352,8 @@ while true; do
             ytw.lib.hooks.discord.hook \
                 "[${CHANNEL_NAME}]" \
                 "Start watching video with ID \`${YOUTUBE_VIDEO_ID}\`." \
-                "${YOUTUBE_VIDEO_ID}"
+                "${YOUTUBE_VIDEO_ID}" \
+                "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
         fi
 
         ytw.main.print.status.ok \

@@ -13,6 +13,7 @@ ytw.lib.hooks.discord.hook() {
     local TITLE="${1}"
     local BODY="${2}"
     local YOUTUBE_VIDEO_ID="${3}"
+    local PREFIX=${4:-""}
     local YOUTUBE_VIDEO_LINK="https://www.youtube.com/watch?v="
     local YOUTUBE_IMAGE_LINK="https://i.ytimg.com/vi"
     local YOUTUBE_IMAGE_FILE="hqdefault.jpg"
@@ -24,9 +25,10 @@ ytw.lib.hooks.discord.hook() {
 
     while true; do
         DATETIME=$(ytw.lib.datetime.get)
-        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]") "
-        echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-        echo -n "Calling Discord hook."
+        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]")" \
+            "$(ytw.lib.print.bold "[${DATETIME}]")" \
+            "${PREFIX}" \
+            "Calling Discord hook."
 
         curl -0 -S -s -o /dev/null -X POST "${DISCORD_WEBHOOK}" \
             -H "Expect:" \
@@ -52,9 +54,10 @@ ytw.lib.hooks.discord.hook() {
             }" && echo " Done." && break
 
         DATETIME=$(ytw.lib.datetime.get)
-        echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]") "
-        echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-        echo "Calling Discord hook failed. Retrying in 1 minute."
+        echo -e "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]")" \
+            "$(ytw.lib.print.bold "[${DATETIME}]")" \
+            "${PREFIX}" \
+            "Calling Discord hook failed. Retrying in 1 minute."
 
         sleep 60
     done
