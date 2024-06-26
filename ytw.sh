@@ -109,11 +109,6 @@ declare -r FILE_CHANNEL_FIRST_RUN="${CWD}/FIRST_RUN.${CHANNEL_NAME}"
 declare -r FILE_CHANNEL_LAST_VIDEO="${CWD}/LAST_VIDEO.${CHANNEL_NAME}"
 declare CHANNEL_LAST_VIDEO=""
 
-# Set to '0' if Firefox is not auto-closing after a video by a user script like with Tampermonkey -
-# which as of now seems to be impossible.
-# Firefox is then closed a short while after the duration of the video.
-declare -ir FIREFOX_IS_SELF_CLOSING=0
-
 # Sane amount of roughly 30 days counting with 3 videos per day.
 declare -i PLAYLIST_ENTRY_LIMIT=90
 
@@ -363,40 +358,32 @@ while true; do
 
         # Starts a Firefox instance with a video from the playlist and closes Firefox
         # after the duration of the video with some small buffer.
-        if [ $FIREFOX_IS_SELF_CLOSING -eq 0 ]; then
-            declare -i FIREFOX_INSTANCE_LIFETIME
-            FIREFOX_INSTANCE_LIFETIME=$(ytw.main.get_sleep_by_duration "${YOUTUBE_URL}")
+        declare -i FIREFOX_INSTANCE_LIFETIME
+        FIREFOX_INSTANCE_LIFETIME=$(ytw.main.get_sleep_by_duration "${YOUTUBE_URL}")
 
-            if [ $OPT_DRY_RUN -eq 0 ]; then
-                exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
-                declare -i PID
-                PID=$(echo $!)
-            fi
-
-            ytw.main.print.status.ok \
-                "Waiting" \
-                "$(ytw.lib.print.yellow "${FIREFOX_INSTANCE_LIFETIME}")" \
-                "minutes before gracefully closing Firefox."
-
-            # shellcheck disable=SC2086
-            ytw.lib.sleep.minutes \
-                $FIREFOX_INSTANCE_LIFETIME \
-                "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
-
-            ytw.main.print.status.ok \
-                "Gracefully killing Firefox with" \
-                "$(ytw.lib.print.yellow "SIGTERM")."
-
-            # shellcheck disable=SC2086
-            if [ $OPT_DRY_RUN -eq 0 ]; then
-                kill -15 $PID
-            fi
+        if [ $OPT_DRY_RUN -eq 0 ]; then
+            exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
+            declare -i PID
+            PID=$(echo $!)
         fi
 
-        # If closing the browser at the end of a video is possible just wait for Firefox
-        # exiting itself.
-        if [ $FIREFOX_IS_SELF_CLOSING -eq 1 ] && [ $OPT_DRY_RUN -eq 0 ]; then
-            exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null
+        ytw.main.print.status.ok \
+            "Waiting" \
+            "$(ytw.lib.print.yellow "${FIREFOX_INSTANCE_LIFETIME}")" \
+            "minutes before gracefully closing Firefox."
+
+        # shellcheck disable=SC2086
+        ytw.lib.sleep.minutes \
+            $FIREFOX_INSTANCE_LIFETIME \
+            "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+
+        ytw.main.print.status.ok \
+            "Gracefully killing Firefox with" \
+            "$(ytw.lib.print.yellow "SIGTERM")."
+
+        # shellcheck disable=SC2086
+        if [ $OPT_DRY_RUN -eq 0 ]; then
+            kill -15 $PID
         fi
 
         # Remember the last fully watched video.
