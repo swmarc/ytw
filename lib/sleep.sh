@@ -33,6 +33,7 @@ ytw.lib.sleep.seconds() {
     echo -e \
         "\033[1K\r$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
         "$(ytw.lib.print.bold "[${DATETIME}]")" \
+        "${PREFIX}" \
         "$(ytw.lib.print.yellow 0) seconds remaining."
 }
 
@@ -42,7 +43,7 @@ ytw.lib.sleep.minutes() {
 
     for ((i = MINUTES; i > 0; i--)); do
         if [ $i -eq 1 ]; then
-            ytw.lib.sleep.seconds 60
+            ytw.lib.sleep.seconds 60 "${PREFIX}"
             continue
         fi
 
