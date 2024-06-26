@@ -135,21 +135,17 @@ trap cleanup SIGINT
 ytw.main.print.status() {
     local STATUS="$1"
     shift
-    local STRINGS="$@"
+    local STRINGS="$*"
 
     DATETIME=$(ytw.lib.datetime.get)
-    echo -ne "${STATUS} "
-    echo -ne "$(ytw.lib.print.bold "[${DATETIME}]") "
-    echo -ne "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")] "
-
-    for STRING in "$STRINGS"; do
-        echo -ne "${STRING}"
-    done
-    echo ""
+    echo -e "${STATUS}" \
+        "$(ytw.lib.print.bold "[${DATETIME}]")" \
+        "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]" \
+        "${STRINGS}"
 }
 
 ytw.main.print.status.ok() {
-    local STRINGS="$@"
+    local STRINGS="$*"
 
     ytw.main.print.status \
         "$(ytw.lib.print.bold "[$(ytw.lib.print.green "+++")]")" \
@@ -157,7 +153,7 @@ ytw.main.print.status.ok() {
 }
 
 ytw.main.print.status.info() {
-    local STRINGS="$@"
+    local STRINGS="$*"
 
     ytw.main.print.status \
         "$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
@@ -165,7 +161,7 @@ ytw.main.print.status.info() {
 }
 
 ytw.main.print.status.error() {
-    local STRINGS="$@"
+    local STRINGS="$*"
 
     ytw.main.print.status \
         "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]")" \
