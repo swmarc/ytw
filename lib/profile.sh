@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 ytw.lib.profile.create() {
-    local DIRECTORY_PROFILES="$1"
-    local CHANNEL_NAME="$2"
-    local DRY_RUN=${3:-0}
+    local -r DIRECTORY_PROFILES="$1"
+    local -r CHANNEL_NAME="$2"
+    local -ir DRY_RUN=${3:-0}
 
     printf "%s\n" \
         "Should we create a default profile from template? (y/n)" \
@@ -31,11 +31,11 @@ ytw.lib.profile.create() {
 }
 
 ytw.lib.profile.copy_template() {
-    local DIRECTORY_PROFILES="$1"
-    local PROFILE_NEW_NAME="$2"
-    local DRY_RUN=${3:-0}
-    local PROFILE_TEMPLATE_NAME="ProfileTemplate"
-    local FILE
+    local -r DIRECTORY_PROFILES="$1"
+    local -r PROFILE_NEW_NAME="$2"
+    local -ir DRY_RUN=${3:-0}
+    local -r PROFILE_TEMPLATE_NAME="ProfileTemplate"
+    local FILE=""
 
     printf "%s\n" "Copying profile template."
     if [ $DRY_RUN -eq 0 ]; then
@@ -61,9 +61,9 @@ ytw.lib.profile.copy_template() {
 }
 
 ytw.lib.profile.create_empty() {
-    local DIRECTORY_PROFILES="$1"
-    local PROFILE_NEW_NAME="$2"
-    local DRY_RUN=${3:-0}
+    local -r DIRECTORY_PROFILES="$1"
+    local -r PROFILE_NEW_NAME="$2"
+    local -ir DRY_RUN=${3:-0}
 
     printf "%s\n" "Skipping profile template."
     printf "%s\n" "Creating empty 'Firefox' profile."
@@ -72,18 +72,13 @@ ytw.lib.profile.create_empty() {
         firefox \
             --no-remote \
             --new-instance \
-            -CreateProfile "${CHANNEL_NAME} ${DIRECTORY_PROFILES}/${CHANNEL_NAME}"
+            -CreateProfile "${PROFILE_NEW_NAME} ${DIRECTORY_PROFILES}/${PROFILE_NEW_NAME}"
     fi
 
     if [ $DRY_RUN -eq 1 ]; then
         echo "Dry-Run: firefox" \
             "--no-remote" \
             "--new-instance" \
-            "-CreateProfile \"${CHANNEL_NAME} ${DIRECTORY_PROFILES}/${CHANNEL_NAME}\""
+            "-CreateProfile \"${PROFILE_NEW_NAME} ${DIRECTORY_PROFILES}/${PROFILE_NEW_NAME}\""
     fi
-}
-
-ytw.lib.profile.start() {
-    local DIRECTORY_PROFILES="$1"
-    local CHANNEL_NAME="$2"    
 }

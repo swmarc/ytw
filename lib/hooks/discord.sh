@@ -1,8 +1,9 @@
 #!/bin/bash
 
-set -eu
+set -eu -o pipefail
 
-YTW_LIB_HOOKS_DISCORD="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+# shellcheck disable=SC2155
+declare -r YTW_LIB_HOOKS_DISCORD="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
 # shellcheck source=../datetime.sh
 source "${YTW_LIB_HOOKS_DISCORD}/../datetime.sh"
@@ -10,13 +11,13 @@ source "${YTW_LIB_HOOKS_DISCORD}/../datetime.sh"
 source "${YTW_LIB_HOOKS_DISCORD}/../print.sh"
 
 ytw.lib.hooks.discord.hook() {
-    local TITLE="${1}"
-    local BODY="${2}"
-    local YOUTUBE_VIDEO_ID="${3}"
-    local PREFIX=${4:-""}
-    local YOUTUBE_VIDEO_LINK="https://www.youtube.com/watch?v="
-    local YOUTUBE_IMAGE_LINK="https://i.ytimg.com/vi"
-    local YOUTUBE_IMAGE_FILE="hqdefault.jpg"
+    local -r TITLE="${1}"
+    local -r BODY="${2}"
+    local -r YOUTUBE_VIDEO_ID="${3}"
+    local -r PREFIX=${4:-""}
+    local -r YOUTUBE_VIDEO_LINK="https://www.youtube.com/watch?v="
+    local -r YOUTUBE_IMAGE_LINK="https://i.ytimg.com/vi"
+    local -r YOUTUBE_IMAGE_FILE="hqdefault.jpg"
     local DATETIME=""
 
     if [ -z "${DISCORD_WEBHOOK}" ]; then
