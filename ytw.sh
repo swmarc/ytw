@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# shellcheck disable=SC2116
-
 set -eu -o pipefail
 
 # shellcheck disable=SC2155
@@ -23,6 +21,8 @@ source "${CWD}/lib/print.sh"
 source "${CWD}/lib/profile.sh"
 # shellcheck source=lib/sleep.sh
 source "${CWD}/lib/sleep.sh"
+# shellcheck source=libexec/websocketd.sh
+source "${CWD}/libexec/websocketd.sh"
 
 script_usage() {
     echo "Usage: ${SCRIPT} [OPTIONS] YtChannelName"
@@ -133,6 +133,7 @@ declare -r DISCORD_WEBHOOK
 
 # Cleanup any filesystem changes regardless how the script has quit.
 cleanup() {
+    kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID &>/dev/null
     rm -rf "${TMP_DIR:?}"
 }
 trap cleanup EXIT
@@ -193,7 +194,7 @@ ytw.main.get_sleep_by_duration() {
 # plays immediately.
 ytw.main.cool_down_queue() {
     # Set randomly between 3 to 13 minutes.
-    local -ir DURATION=$(echo $((RANDOM % (13 - 3 + 1) + 3)))
+    local -ir DURATION=$((RANDOM % (13 - 3 + 1) + 3))
 
     ytw.main.print.status.ok "Cool down video queue."
 
@@ -277,6 +278,10 @@ if [ $(printf "%s" "${RUNNER_OPTIONS}" | wc -m) -gt $RUNNER_OPTIONS_LENGTH ]; th
     ytw.main.print.status.info "$(printf "%s" "${RUNNER_OPTIONS}" | rev | cut -c 2- | rev)"
 fi
 
+# Type setting loop variables.
+declare -i FIREFOX_INSTANCE_LIFETIME=0 FIREFOX_PID=0 ITERATION=0 ITERATION_TOTAL=0 WEBSOCKETD_PID=0 TAIL_PID=0
+declare WATCH_ENTRIES="" YOUTUBE_ID="" YOUTUBE_URL=""
+
 while true; do
     # yt-dlp seems to append the playlist instead of overwriting it,
     # so delete the playlist from possible previous loop.
@@ -302,7 +307,7 @@ while true; do
             --flat-playlist \
             --playlist-end $PLAYLIST_ENTRY_LIMIT \
             --print-to-file "%(id)s %(webpage_url)s" "${TMP_DIR}/playlist" \
-            https://www.youtube.com/@${CHANNEL_NAME}/videos \
+            "https://www.youtube.com/@${CHANNEL_NAME}/videos" \
             1>/dev/null
     } || {
         ytw.main.print.status.error "Couldn't fetch videos from channel." "See error(s) above. Exiting."
@@ -336,8 +341,7 @@ while true; do
         continue
     fi
 
-    declare -i ITERATION=1
-    declare -i ITERATION_TOTAL
+    ITERATION=1
     ITERATION_TOTAL=$(printf '%s\n' "${WATCH_ENTRIES[@]}" | wc -l)
     while read -r WATCH_ENTRY; do
         YOUTUBE_ID=$(echo "${WATCH_ENTRY}" | cut -d' ' -f1)
@@ -358,19 +362,26 @@ while true; do
 
         # Starts a Firefox instance with a video from the playlist and closes Firefox
         # after the duration of the video with some small buffer.
-        declare -i FIREFOX_INSTANCE_LIFETIME
         FIREFOX_INSTANCE_LIFETIME=$(ytw.main.get_sleep_by_duration "${YOUTUBE_URL}")
-
         if [ $OPT_DRY_RUN -eq 0 ]; then
             exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
-            declare -i PID
-            PID=$(echo $!)
+            declare -i FIREFOX_PID
+            FIREFOX_PID=$!
         fi
 
         ytw.main.print.status.ok \
             "Waiting" \
             "$(ytw.lib.print.yellow "${FIREFOX_INSTANCE_LIFETIME}")" \
             "minutes before gracefully closing Firefox."
+
+        WEBSOCKETD_PID=$(
+            ytw.libexec.websocketd.start \
+            "${TMP_DIR}/websocket" \
+            2 \
+            "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+        )
+        tail -F "${TMP_DIR}/websocket" 2>/dev/null &
+        TAIL_PID=$!
 
         # shellcheck disable=SC2086
         ytw.lib.sleep.minutes \
@@ -382,9 +393,9 @@ while true; do
             "$(ytw.lib.print.yellow "SIGTERM")."
 
         # shellcheck disable=SC2086
-        if [ $OPT_DRY_RUN -eq 0 ]; then
-            kill -15 $PID
-        fi
+        # if [ $OPT_DRY_RUN -eq 0 ]; then
+            kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID &>/dev/null
+        # fi
 
         # Remember the last fully watched video.
         if [ $OPT_DRY_RUN -eq 0 ]; then

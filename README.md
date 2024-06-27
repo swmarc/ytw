@@ -16,6 +16,10 @@ Uses `Firefox` with per channel profiles for automatically watching videos of a 
 * `yt-dlp`
 * `firefox`
 
+### Optional Dependencies
+
+* `websocketd`
+
 ### Installing
 
 * `git clone -b main https://github.com/swmarc/ytw.git`
