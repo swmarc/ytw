@@ -27,8 +27,10 @@ ytw.lib.print.blink() {
 }
 
 ytw.lib.print.bold() {
-    local -r BOLD=$(tput bold)
-    local -r NORMAL=$(tput sgr0)
+    # shellcheck disable=SC2030
+    local -r BOLD=$(export TERM=xterm && tput bold)
+    # shellcheck disable=SC2030
+    local -r NORMAL=$(export TERM=xterm && tput sgr0)
 
     echo -ne "${BOLD}${1}${NORMAL}"
 }
