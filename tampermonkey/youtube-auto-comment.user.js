@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Auto Comment After Watch Time
 // @namespace    http://tampermonkey.net/
-// @version      2.0.2
+// @version      2.1.0
 // @description  Automatically comments a YouTube video after watching a specified percentage
 // @author       swmarc
 // @downloadURL  https://github.com/swmarc/ytw/raw/main/tampermonkey/youtube-auto-comment.user.js
@@ -18,9 +18,11 @@
 
     const DEFAULT_LANGUAGE = 'de_DE';
     const DEFAULT_WATCH_PERCENTAGE = 91;
+    const WEBSOCKET_URL = 'ws://127.0.0.1:16581';
 
     let SELECTED_LANGUAGE = GM_getValue('language', DEFAULT_LANGUAGE);
     let WATCH_PERCENTAGE = GM_getValue('watchPercentage', DEFAULT_WATCH_PERCENTAGE);
+    let socket;
 
     const COMMENT_TEXTS = {
         de_DE: [
@@ -116,6 +118,12 @@
                 submitButton.click();
                 logDebug("Clicked submit button.");
                 clearInterval(intervalId);
+
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send('COMMENTED');
+                } else {
+                    logDebug('WebSocket connection not established or ready.');
+                }
             }, 3000);
         } else {
             logDebug("Submit button not found!");
@@ -225,8 +233,25 @@
         }
     };
 
-    // Add a menu command to open the settings dialog
     GM_registerMenuCommand('YouTube Auto Comment Settings', openSettingsDialog);
+
+    socket = new WebSocket(WEBSOCKET_URL);
+
+    socket.addEventListener('open', function (event) {
+        logDebug('WebSocket connection established.');
+    });
+
+    socket.addEventListener('message', function (event) {
+        logDebug('Message from server:', event.data);
+    });
+
+    socket.addEventListener('close', function (event) {
+        logDebug('WebSocket connection closed.');
+    });
+
+    socket.addEventListener('error', function (error) {
+        logDebug('WebSocket error:', error);
+    });
 
     setTimeout(monitorWatchTime, 3000);
 })();

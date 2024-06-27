@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# shellcheck disable=SC2116
-
 set -eu -o pipefail
 
 # shellcheck disable=SC2155
@@ -23,6 +21,8 @@ source "${CWD}/lib/print.sh"
 source "${CWD}/lib/profile.sh"
 # shellcheck source=lib/sleep.sh
 source "${CWD}/lib/sleep.sh"
+# shellcheck source=libexec/websocketd.sh
+source "${CWD}/libexec/websocketd.sh"
 
 script_usage() {
     echo "Usage: ${SCRIPT} [OPTIONS] YtChannelName"
@@ -109,11 +109,6 @@ declare -r FILE_CHANNEL_FIRST_RUN="${CWD}/FIRST_RUN.${CHANNEL_NAME}"
 declare -r FILE_CHANNEL_LAST_VIDEO="${CWD}/LAST_VIDEO.${CHANNEL_NAME}"
 declare CHANNEL_LAST_VIDEO=""
 
-# Set to '0' if Firefox is not auto-closing after a video by a user script like with Tampermonkey -
-# which as of now seems to be impossible.
-# Firefox is then closed a short while after the duration of the video.
-declare -ir FIREFOX_IS_SELF_CLOSING=0
-
 # Sane amount of roughly 30 days counting with 3 videos per day.
 declare -i PLAYLIST_ENTRY_LIMIT=90
 
@@ -138,6 +133,7 @@ declare -r DISCORD_WEBHOOK
 
 # Cleanup any filesystem changes regardless how the script has quit.
 cleanup() {
+    kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID &>/dev/null
     rm -rf "${TMP_DIR:?}"
 }
 trap cleanup EXIT
@@ -198,7 +194,7 @@ ytw.main.get_sleep_by_duration() {
 # plays immediately.
 ytw.main.cool_down_queue() {
     # Set randomly between 3 to 13 minutes.
-    local -ir DURATION=$(echo $((RANDOM % (13 - 3 + 1) + 3)))
+    local -ir DURATION=$((RANDOM % (13 - 3 + 1) + 3))
 
     ytw.main.print.status.ok "Cool down video queue."
 
@@ -282,6 +278,10 @@ if [ $(printf "%s" "${RUNNER_OPTIONS}" | wc -m) -gt $RUNNER_OPTIONS_LENGTH ]; th
     ytw.main.print.status.info "$(printf "%s" "${RUNNER_OPTIONS}" | rev | cut -c 2- | rev)"
 fi
 
+# Type setting loop variables.
+declare -i FIREFOX_INSTANCE_LIFETIME=0 FIREFOX_PID=0 ITERATION=0 ITERATION_TOTAL=0 WEBSOCKETD_PID=0 TAIL_PID=0
+declare WATCH_ENTRIES="" YOUTUBE_ID="" YOUTUBE_URL=""
+
 while true; do
     # yt-dlp seems to append the playlist instead of overwriting it,
     # so delete the playlist from possible previous loop.
@@ -307,7 +307,7 @@ while true; do
             --flat-playlist \
             --playlist-end $PLAYLIST_ENTRY_LIMIT \
             --print-to-file "%(id)s %(webpage_url)s" "${TMP_DIR}/playlist" \
-            https://www.youtube.com/@${CHANNEL_NAME}/videos \
+            "https://www.youtube.com/@${CHANNEL_NAME}/videos" \
             1>/dev/null
     } || {
         ytw.main.print.status.error "Couldn't fetch videos from channel." "See error(s) above. Exiting."
@@ -341,8 +341,7 @@ while true; do
         continue
     fi
 
-    declare -i ITERATION=1
-    declare -i ITERATION_TOTAL
+    ITERATION=1
     ITERATION_TOTAL=$(printf '%s\n' "${WATCH_ENTRIES[@]}" | wc -l)
     while read -r WATCH_ENTRY; do
         YOUTUBE_ID=$(echo "${WATCH_ENTRY}" | cut -d' ' -f1)
@@ -363,40 +362,41 @@ while true; do
 
         # Starts a Firefox instance with a video from the playlist and closes Firefox
         # after the duration of the video with some small buffer.
-        if [ $FIREFOX_IS_SELF_CLOSING -eq 0 ]; then
-            declare -i FIREFOX_INSTANCE_LIFETIME
-            FIREFOX_INSTANCE_LIFETIME=$(ytw.main.get_sleep_by_duration "${YOUTUBE_URL}")
-
-            if [ $OPT_DRY_RUN -eq 0 ]; then
-                exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
-                declare -i PID
-                PID=$(echo $!)
-            fi
-
-            ytw.main.print.status.ok \
-                "Waiting" \
-                "$(ytw.lib.print.yellow "${FIREFOX_INSTANCE_LIFETIME}")" \
-                "minutes before gracefully closing Firefox."
-
-            # shellcheck disable=SC2086
-            ytw.lib.sleep.minutes \
-                $FIREFOX_INSTANCE_LIFETIME \
-                "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
-
-            ytw.main.print.status.ok \
-                "Gracefully killing Firefox with" \
-                "$(ytw.lib.print.yellow "SIGTERM")."
-
-            # shellcheck disable=SC2086
-            if [ $OPT_DRY_RUN -eq 0 ]; then
-                kill -15 $PID
-            fi
+        FIREFOX_INSTANCE_LIFETIME=$(ytw.main.get_sleep_by_duration "${YOUTUBE_URL}")
+        if [ $OPT_DRY_RUN -eq 0 ]; then
+            exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
+            declare -i FIREFOX_PID
+            FIREFOX_PID=$!
         fi
 
-        # If closing the browser at the end of a video is possible just wait for Firefox
-        # exiting itself.
-        if [ $FIREFOX_IS_SELF_CLOSING -eq 1 ] && [ $OPT_DRY_RUN -eq 0 ]; then
-            exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null
+        ytw.main.print.status.ok \
+            "Waiting" \
+            "$(ytw.lib.print.yellow "${FIREFOX_INSTANCE_LIFETIME}")" \
+            "minutes before gracefully closing Firefox."
+
+        if [ $OPT_DRY_RUN -eq 0 ]; then
+            WEBSOCKETD_PID=$(
+                ytw.libexec.websocketd.start \
+                    "${TMP_DIR}/websocket" \
+                    2 \
+                    "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+            )
+            tail -F "${TMP_DIR}/websocket" 2>/dev/null &
+            TAIL_PID=$!
+        fi
+
+        # shellcheck disable=SC2086
+        ytw.lib.sleep.minutes \
+            $FIREFOX_INSTANCE_LIFETIME \
+            "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+
+        ytw.main.print.status.ok \
+            "Gracefully killing Firefox with" \
+            "$(ytw.lib.print.yellow "SIGTERM")."
+
+        # shellcheck disable=SC2086
+        if [ $OPT_DRY_RUN -eq 0 ]; then
+            kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID &>/dev/null
         fi
 
         # Remember the last fully watched video.
