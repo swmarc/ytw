@@ -374,14 +374,16 @@ while true; do
             "$(ytw.lib.print.yellow "${FIREFOX_INSTANCE_LIFETIME}")" \
             "minutes before gracefully closing Firefox."
 
-        WEBSOCKETD_PID=$(
-            ytw.libexec.websocketd.start \
-            "${TMP_DIR}/websocket" \
-            2 \
-            "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
-        )
-        tail -F "${TMP_DIR}/websocket" 2>/dev/null &
-        TAIL_PID=$!
+        if [ $OPT_DRY_RUN -eq 0 ]; then
+            WEBSOCKETD_PID=$(
+                ytw.libexec.websocketd.start \
+                    "${TMP_DIR}/websocket" \
+                    2 \
+                    "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+            )
+            tail -F "${TMP_DIR}/websocket" 2>/dev/null &
+            TAIL_PID=$!
+        fi
 
         # shellcheck disable=SC2086
         ytw.lib.sleep.minutes \
@@ -393,9 +395,9 @@ while true; do
             "$(ytw.lib.print.yellow "SIGTERM")."
 
         # shellcheck disable=SC2086
-        # if [ $OPT_DRY_RUN -eq 0 ]; then
+        if [ $OPT_DRY_RUN -eq 0 ]; then
             kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID &>/dev/null
-        # fi
+        fi
 
         # Remember the last fully watched video.
         if [ $OPT_DRY_RUN -eq 0 ]; then
