@@ -51,12 +51,12 @@ ytw.lib.profile.copy_template() {
     printf "%s\n" "Adjusting paths for new profile."
     if [ "${DRY_RUN}" -eq 0 ]; then
         find "${DIRECTORY_PROFILES}/${PROFILE_NEW_NAME}" -type f | while read -r FILE; do
-            sed -i "s/${PROFILE_TEMPLATE_NAME}/${PROFILE_NEW_NAME}/g" "${FILE}"
+            sed -i "s|/.*/${PROFILE_TEMPLATE_NAME}|${DIRECTORY_PROFILES}/${PROFILE_NEW_NAME}|" "${FILE}"
         done
     fi
 
     if [ "${DRY_RUN}" -eq 1 ]; then
-        printf "%s\n" "Dry-Run: sed -i \"s/${PROFILE_TEMPLATE_NAME}/${PROFILE_NEW_NAME}/g\" \"\${FILE}\""
+        printf "%s\n" "Dry-Run: sed -i \"s|/.*/${PROFILE_TEMPLATE_NAME}|${DIRECTORY_PROFILES}/${PROFILE_NEW_NAME}|\" \"\${FILE}\""
     fi
 }
 
