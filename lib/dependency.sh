@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 # shellcheck disable=SC2155
-declare -r CWD_LIB_DEPENDENCY="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+declare CWD_LIB_DEPENDENCY="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
 ywt.lib.dependency.check_commands () {
   local LIST_COMMANDS=${1}

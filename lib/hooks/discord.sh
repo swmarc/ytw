@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 # shellcheck disable=SC2155
-declare -r YTW_LIB_HOOKS_DISCORD="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+declare YTW_LIB_HOOKS_DISCORD="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
 # shellcheck source=../datetime.sh
 source "${YTW_LIB_HOOKS_DISCORD}/../datetime.sh"
