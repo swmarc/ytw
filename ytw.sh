@@ -6,6 +6,7 @@ set -eu -o pipefail
 declare -r CWD="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 # shellcheck disable=SC2155
 declare -r SCRIPT=$(basename "${BASH_SOURCE[0]}" .sh)
+declare -ir SCRIPT_PID=$$
 
 # shellcheck source=lib/dependency.sh
 source "${CWD}/lib/dependency.sh"
@@ -13,6 +14,8 @@ ywt.lib.dependency.check_install
 
 # shellcheck source=lib/hooks/discord.sh
 source "${CWD}/lib/hooks/discord.sh"
+# shellcheck source=lib/network/connectivity.sh
+source "${CWD}/lib/network/connectivity.sh"
 # shellcheck source=lib/datetime.sh
 source "${CWD}/lib/datetime.sh"
 # shellcheck source=lib/main.sh
@@ -106,6 +109,20 @@ fi
 # shellcheck source=.ywt.config.sh
 source "${CONFIG_FILE}"
 
+# shellcheck disable=SC2155
+declare -r TMP_DIR=$(mktemp -d)
+declare RUNNER_OPTIONS="Runner options:"
+# shellcheck disable=SC2155
+declare -ir RUNNER_OPTIONS_LENGTH=$(printf "%s" "${RUNNER_OPTIONS}" | wc -m)
+declare -r FIREFOX_PROFILES="${CWD}/.profiles"
+declare DISCORD_WEBHOOK=""
+if [ -f "${CWD}/discord-webhook" ]; then
+    # shellcheck disable=SC2034
+    # shellcheck disable=SC2155
+    DISCORD_WEBHOOK=$(cat "${CWD}/discord-webhook")
+fi
+declare -r DISCORD_WEBHOOK
+
 if [ -z "${CHANNEL_NAMES}" ]; then
     echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]") "
     echo "Missing YouTube Channel Name(s)."
@@ -117,7 +134,7 @@ fi
 # Cleanup any filesystem changes regardless how the script has quit.
 cleanup() {
     set +u
-    kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID &>/dev/null
+    kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID $CONNECTIVITY_PID &>/dev/null
     rm -rf "${TMP_DIR:?}"
 }
 trap cleanup EXIT
@@ -181,7 +198,8 @@ fi
 
 # Type setting loop variables.
 declare CHANNEL_LAST_VIDEO=""
-declare -i FIREFOX_INSTANCE_LIFETIME=0 FIREFOX_PID=0 ITERATION=0 ITERATION_TOTAL=0 WEBSOCKETD_PID=0 TAIL_PID=0
+declare -i CONNECTIVITY_PID=0 FIREFOX_INSTANCE_LIFETIME=0 FIREFOX_PID=0
+declare -i ITERATION=0 ITERATION_TOTAL=0 TAIL_PID=0 WEBSOCKETD_PID=0
 declare WATCH_ENTRIES="" YOUTUBE_ID="" YOUTUBE_URL=""
 
 while true; do
@@ -267,6 +285,12 @@ while true; do
                 YOUTUBE_ID=$(echo "${WATCH_ENTRY}" | cut -d' ' -f1)
                 YOUTUBE_URL=$(echo "${WATCH_ENTRY}" | cut -d' ' -f2)
 
+                ymt.lib.network.connectivity.loop_check \
+                    "${CHANNEL_NAME}" \
+                    $SCRIPT_PID \
+                    &
+                CONNECTIVITY_PID=$!
+
                 if [ $OPT_DRY_RUN -eq 0 ]; then
                     ytw.lib.hooks.discord.hook \
                         "[${CHANNEL_NAME}]" \
@@ -291,7 +315,6 @@ while true; do
 
                 if [ $OPT_DRY_RUN -eq 0 ]; then
                     exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
-                    declare -i FIREFOX_PID
                     FIREFOX_PID=$!
                 fi
 
@@ -324,7 +347,7 @@ while true; do
 
                 # shellcheck disable=SC2086
                 if [ $OPT_DRY_RUN -eq 0 ]; then
-                    kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID &>/dev/null
+                    kill -SIGTERM $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID $CONNECTIVITY_PID &>/dev/null
                 fi
 
                 # Remember the last fully watched video.
@@ -342,7 +365,7 @@ while true; do
     # Cool down processing channel videos for 2h.
     ytw.lib.main.print_status_info \
         "${SCRIPT}" \
-        "Throttling channels for $(ytw.lib.print.yellow "60")m."
+        "Throttling channels for $(ytw.lib.print.yellow "60") minutes."
     ytw.lib.sleep.minutes \
         60 \
         "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${SCRIPT}")]")"
