@@ -23,7 +23,6 @@ Uses `Firefox` with per channel profiles for automatically watching videos of a 
 ### Installing
 
 * `git clone -b main https://github.com/swmarc/ytw.git`
-* If you want to be notified when a video has been liked & commented on, you need to install `websocketd`.
 
 ### Firefox Profile Generation
 
@@ -52,10 +51,16 @@ Both `Tampermonkey` scripts mentioned under `Automatic Setup` are required if yo
 
 ### Executing Program & First Run
 
-* `bash ytw.sh ChannelName` # Use channel name from behind `@` eg. https://youtube.com/@ChannelName
-* Carefully read the instructions if running the script the first time for a channel.
+* Set up a channel with `bash ytw.sh -s ChannelName`.
+* Use channel name from behind `@` eg. https://youtube.com/@ChannelName
+* Carefully read the instructions.
 * See `Important Notes` for a known issues with YouTube. You probably want to apply the change mentioned there.
 * Optional: For `Discord` notifications create a file called `discord-webhook` in the same directory as `ytw.sh` with the web URL as its content.
+* Optional: If you want to be notified when a video has been liked & commented on, you need to install `websocketd`.
+* Start watching a channel with `bash ytw.sh ChannelName`.
+* Supply multiple channel names if you have more than one channel set up.
+* Running multiple instances of `ytw.sh` is not recommended since they would conflict with the WebSocket server backend.
+* If `websocketd` is not installed, multiple instances are no issue, but you won't receive notifications if a video was liked & commented.
 
 ### Importent Notes
 
