@@ -107,6 +107,7 @@ if [ ! -f "${CONFIG_FILE}" ]; then
     exit 1
 fi
 # shellcheck source=.ywt.config.sh
+# shellcheck disable=SC1091
 source "${CONFIG_FILE}"
 
 # shellcheck disable=SC2155
@@ -190,6 +191,7 @@ if [ $OPT_DRY_RUN -eq 1 ]; then
     RUNNER_OPTIONS+=" $(ytw.lib.print.yellow "Dry Run"),"
 fi
 
+# shellcheck disable=SC2046
 if [ $(printf "%s" "${RUNNER_OPTIONS}" | wc -m) -gt $RUNNER_OPTIONS_LENGTH ]; then
     ytw.lib.main.print_status_info \
         "${SCRIPT}" \
@@ -203,6 +205,7 @@ declare -i ITERATION=0 ITERATION_TOTAL=0 TAIL_PID=0 WEBSOCKETD_PID=0
 declare WATCH_ENTRIES="" YOUTUBE_ID="" YOUTUBE_URL=""
 
 while true; do
+    # shellcheck disable=SC2068
     for CHANNEL_NAME in ${CHANNEL_NAMES[@]}; do
         # Type setting channel variables.
         declare FIREFOX_OPTIONS="--profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}" --no-remote --new-instance --window-size=1600,900 ${OPT_GUI}"
@@ -240,6 +243,7 @@ while true; do
                 "${CHANNEL_NAME}" \
                 "Fetching videos from channel."
             {
+                # shellcheck disable=SC2086
                 yt-dlp \
                     --lazy-playlist \
                     --flat-playlist \
@@ -262,6 +266,7 @@ while true; do
             # Non-playlists won't return an upload date so we can only use the last watched video ID.
             if [ -n "${CHANNEL_LAST_VIDEO}" ]; then
                 # Order from oldest to newest video.
+                # shellcheck disable=SC2086
                 WATCH_ENTRIES=$(
                     tac "${TMP_DIR}/playlist" |
                         grep -F -A $PLAYLIST_ENTRY_LIMIT "${CHANNEL_LAST_VIDEO}" |
@@ -307,6 +312,7 @@ while true; do
 
                 # Starts a Firefox instance with a video from the playlist and closes Firefox
                 # after the duration of the video with some small buffer.
+                # shellcheck disable=SC2086
                 FIREFOX_INSTANCE_LIFETIME=$(
                     ytw.lib.main.get_sleep_by_duration \
                         "${YOUTUBE_URL}" \
@@ -357,7 +363,7 @@ while true; do
                 ITERATION=$((ITERATION + 1))
 
                 # Cool down queue.
-                ytw.lib.main.cool_down_queue
+                ytw.lib.main.cool_down_queue "${CHANNEL_NAME}"
             done <<<"${WATCH_ENTRIES[@]}"
         done
     done
