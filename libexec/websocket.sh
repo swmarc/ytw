@@ -11,7 +11,6 @@ source "${YTW_LIBEXEC_WEBSOCKET}/../lib/datetime.sh"
 source "${YTW_LIBEXEC_WEBSOCKET}/../lib/print.sh"
 
 declare -r WEBSOCKET_TMP_FILE="$1"
-truncate -s 0 "${WEBSOCKET_TMP_FILE}"
 (( $# > 0 )) && shift
 
 declare -ir MESSAGE_LIMIT=${1:-1}
