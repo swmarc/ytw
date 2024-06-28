@@ -19,7 +19,7 @@ declare -ir PLAYLIST_ENTRY_LIMIT_INIT=10
 # WARNING: The Addon seems to be unstable keeping the higher play rate.
 #          Using the native YouTube speed up is the safer alternative.
 #          If unsure set to 1 for best compatibility [default].
-declare -r YOUTUBE_PLAYBACK_SPEED=1
+declare -i YOUTUBE_PLAYBACK_SPEED=1
 
 declare DISCORD_WEBHOOK=""
 if [ -f "${CWD}/discord-webhook" ]; then
