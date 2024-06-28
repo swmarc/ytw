@@ -6,6 +6,7 @@ set -eu -o pipefail
 declare -r CWD="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 # shellcheck disable=SC2155
 declare -r SCRIPT=$(basename "${BASH_SOURCE[0]}" .sh)
+declare -ir SCRIPT_PID=$$
 
 # shellcheck source=lib/dependency.sh
 source "${CWD}/lib/dependency.sh"
@@ -13,6 +14,8 @@ ywt.lib.dependency.check_install
 
 # shellcheck source=lib/hooks/discord.sh
 source "${CWD}/lib/hooks/discord.sh"
+# shellcheck source=lib/network/connectivity.sh
+source "${CWD}/lib/network/connectivity.sh"
 # shellcheck source=lib/datetime.sh
 source "${CWD}/lib/datetime.sh"
 # shellcheck source=lib/main.sh
@@ -131,7 +134,7 @@ fi
 # Cleanup any filesystem changes regardless how the script has quit.
 cleanup() {
     set +u
-    kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID &>/dev/null
+    kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID $CONNECTIVITY_PID &>/dev/null
     rm -rf "${TMP_DIR:?}"
 }
 trap cleanup EXIT
@@ -195,7 +198,8 @@ fi
 
 # Type setting loop variables.
 declare CHANNEL_LAST_VIDEO=""
-declare -i FIREFOX_INSTANCE_LIFETIME=0 FIREFOX_PID=0 ITERATION=0 ITERATION_TOTAL=0 WEBSOCKETD_PID=0 TAIL_PID=0
+declare -i CONNECTIVITY_PID=0 FIREFOX_INSTANCE_LIFETIME=0 FIREFOX_PID=0
+declare -i ITERATION=0 ITERATION_TOTAL=0 TAIL_PID=0 WEBSOCKETD_PID=0
 declare WATCH_ENTRIES="" YOUTUBE_ID="" YOUTUBE_URL=""
 
 while true; do
@@ -281,6 +285,12 @@ while true; do
                 YOUTUBE_ID=$(echo "${WATCH_ENTRY}" | cut -d' ' -f1)
                 YOUTUBE_URL=$(echo "${WATCH_ENTRY}" | cut -d' ' -f2)
 
+                ymt.lib.network.connectivity.loop_check \
+                    "${CHANNEL_NAME}" \
+                    $SCRIPT_PID \
+                    &
+                CONNECTIVITY_PID=$!
+
                 if [ $OPT_DRY_RUN -eq 0 ]; then
                     ytw.lib.hooks.discord.hook \
                         "[${CHANNEL_NAME}]" \
@@ -305,7 +315,6 @@ while true; do
 
                 if [ $OPT_DRY_RUN -eq 0 ]; then
                     exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
-                    declare -i FIREFOX_PID
                     FIREFOX_PID=$!
                 fi
 
@@ -338,7 +347,7 @@ while true; do
 
                 # shellcheck disable=SC2086
                 if [ $OPT_DRY_RUN -eq 0 ]; then
-                    kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID &>/dev/null
+                    kill -SIGTERM $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID $CONNECTIVITY_PID &>/dev/null
                 fi
 
                 # Remember the last fully watched video.
