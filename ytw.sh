@@ -79,7 +79,8 @@ while [ "$#" -gt 0 ]; do
         exit 1
         ;;
     *)
-        declare -r CHANNEL_NAMES=($1)
+        read -r -a CHANNEL_NAMES <<<"$@"
+        declare -r CHANNEL_NAMES
         break
         ;;
     esac
@@ -173,10 +174,8 @@ if [ $OPT_DRY_RUN -eq 1 ]; then
 fi
 
 if [ $(printf "%s" "${RUNNER_OPTIONS}" | wc -m) -gt $RUNNER_OPTIONS_LENGTH ]; then
-    DATETIME=$(ytw.lib.datetime.get)
-    echo -e \
-        "$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
-        "$(ytw.lib.print.bold "[${DATETIME}]")" \
+    ytw.lib.main.print_status_info \
+        "${SCRIPT}" \
         "$(printf "%s" "${RUNNER_OPTIONS}" | rev | cut -c 2- | rev)"
 fi
 
@@ -185,158 +184,166 @@ declare CHANNEL_LAST_VIDEO=""
 declare -i FIREFOX_INSTANCE_LIFETIME=0 FIREFOX_PID=0 ITERATION=0 ITERATION_TOTAL=0 WEBSOCKETD_PID=0 TAIL_PID=0
 declare WATCH_ENTRIES="" YOUTUBE_ID="" YOUTUBE_URL=""
 
-for CHANNEL_NAME in ${CHANNEL_NAMES}; do
-    # Type setting channel variables.
-    declare FIREFOX_OPTIONS="--profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}" --no-remote --new-instance --window-size=1600,900 ${OPT_GUI}"
-    declare FIREFOX_COMMAND="firefox ${FIREFOX_OPTIONS}"
-    declare FILE_CHANNEL_FIRST_RUN="${CWD}/FIRST_RUN.${CHANNEL_NAME}"
-    declare FILE_CHANNEL_LAST_VIDEO="${CWD}/LAST_VIDEO.${CHANNEL_NAME}"
+while true; do
+    for CHANNEL_NAME in ${CHANNEL_NAMES[@]}; do
+        # Type setting channel variables.
+        declare FIREFOX_OPTIONS="--profile "${FIREFOX_PROFILES}/${CHANNEL_NAME}" -P "${CHANNEL_NAME}" --no-remote --new-instance --window-size=1600,900 ${OPT_GUI}"
+        declare FIREFOX_COMMAND="firefox ${FIREFOX_OPTIONS}"
+        declare FILE_CHANNEL_FIRST_RUN="${CWD}/FIRST_RUN.${CHANNEL_NAME}"
+        declare FILE_CHANNEL_LAST_VIDEO="${CWD}/LAST_VIDEO.${CHANNEL_NAME}"
 
-    if [ ! -f "${FILE_CHANNEL_FIRST_RUN}" ]; then
-        ytw.lib.main.print_status_error \
-            "${CHANNEL_NAME}" \
-            "Channel not yet set up. Skipping."
-    fi
-
-    while true; do
-        # yt-dlp seems to append the playlist instead of overwriting it,
-        # so delete the playlist from possible previous loop.
-        rm -f "${TMP_DIR:?}/playlist"
-
-        # If no video was yet watched fetch a watch list of PLAYLIST_ENTRY_LIMIT_INIT videos.
-        if [ ! -f "${FILE_CHANNEL_LAST_VIDEO}" ]; then
-            PLAYLIST_ENTRY_LIMIT=$PLAYLIST_ENTRY_LIMIT_INIT
-            truncate -s 0 "${FILE_CHANNEL_LAST_VIDEO}"
-        fi
-
-        # Limit the watch list to PLAYLIST_ENTRY_LIMIT_INIT videos if we got no video ID.
-        CHANNEL_LAST_VIDEO=$(cat "${FILE_CHANNEL_LAST_VIDEO}")
-        if [ -z "${CHANNEL_LAST_VIDEO}" ]; then
-            PLAYLIST_ENTRY_LIMIT=$PLAYLIST_ENTRY_LIMIT_INIT
-        fi
-
-        # Fetch new list of videos.
-        ytw.lib.main.print_status_ok \
-            "${CHANNEL_NAME}" \
-            "Fetching videos from channel."
-        {
-            yt-dlp \
-                --lazy-playlist \
-                --flat-playlist \
-                --playlist-end $PLAYLIST_ENTRY_LIMIT \
-                --print-to-file "%(id)s %(webpage_url)s" "${TMP_DIR}/playlist" \
-                "https://www.youtube.com/@${CHANNEL_NAME}/videos" \
-                1>/dev/null
-        } || {
+        if [ ! -f "${FILE_CHANNEL_FIRST_RUN}" ]; then
             ytw.lib.main.print_status_error \
                 "${CHANNEL_NAME}" \
-                "Couldn't fetch videos from channel." "See error(s) above. Exiting."
-            exit 1
-        }
-
-        # If there's no last watched video ID recorded process the whole playlist.
-        if [ -z "${CHANNEL_LAST_VIDEO}" ]; then
-            WATCH_ENTRIES=$(tac "${TMP_DIR}/playlist")
-        fi
-
-        # Non-playlists won't return an upload date so we can only use the last watched video ID.
-        if [ -n "${CHANNEL_LAST_VIDEO}" ]; then
-            # Order from oldest to newest video.
-            WATCH_ENTRIES=$(
-                tac "${TMP_DIR}/playlist" |
-                    grep -F -A $PLAYLIST_ENTRY_LIMIT "${CHANNEL_LAST_VIDEO}" |
-                    grep -v "${CHANNEL_LAST_VIDEO}" ||
-                    true
-            )
-        fi
-
-        # Cool down processing channel videos for 2h if no new videos are available yet.
-        if [ -z "${WATCH_ENTRIES}" ]; then
-            ytw.lib.main.print_status_info \
-                "${CHANNEL_NAME}" \
-                "No new videos for channel." "Throttling for $(ytw.lib.print.yellow "60")m."
-
-            ytw.lib.sleep.minutes \
-                60 \
-                "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+                "Channel not yet set up. Skipping."
 
             continue
         fi
 
-        ITERATION=1
-        ITERATION_TOTAL=$(printf '%s\n' "${WATCH_ENTRIES[@]}" | wc -l)
-        while read -r WATCH_ENTRY; do
-            YOUTUBE_ID=$(echo "${WATCH_ENTRY}" | cut -d' ' -f1)
-            YOUTUBE_URL=$(echo "${WATCH_ENTRY}" | cut -d' ' -f2)
+        while true; do
+            # yt-dlp seems to append the playlist instead of overwriting it,
+            # so delete the playlist from possible previous loop.
+            rm -f "${TMP_DIR:?}/playlist"
 
-            if [ $OPT_DRY_RUN -eq 0 ]; then
-                ytw.lib.hooks.discord.hook \
-                    "[${CHANNEL_NAME}]" \
-                    "Start watching video with ID \`${YOUTUBE_ID}\`." \
-                    "${YOUTUBE_ID}" \
-                    "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+            # If no video was yet watched fetch a watch list of PLAYLIST_ENTRY_LIMIT_INIT videos.
+            if [ ! -f "${FILE_CHANNEL_LAST_VIDEO}" ]; then
+                PLAYLIST_ENTRY_LIMIT=$PLAYLIST_ENTRY_LIMIT_INIT
+                truncate -s 0 "${FILE_CHANNEL_LAST_VIDEO}"
             fi
 
-            ytw.lib.main.print_status_ok \
-                "${CHANNEL_NAME}" \
-                "Starting Firefox instance with URL" \
-                "'$(ytw.lib.print.yellow "${YOUTUBE_URL}")'." \
-                "$(ytw.lib.print.iteration "${ITERATION}" "${ITERATION_TOTAL}")"
-
-            # Starts a Firefox instance with a video from the playlist and closes Firefox
-            # after the duration of the video with some small buffer.
-            FIREFOX_INSTANCE_LIFETIME=$(
-                ytw.lib.main.get_sleep_by_duration \
-                    "${YOUTUBE_URL}" \
-                    $YOUTUBE_PLAYBACK_SPEED
-            )
-
-            if [ $OPT_DRY_RUN -eq 0 ]; then
-                exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
-                declare -i FIREFOX_PID
-                FIREFOX_PID=$!
+            # Limit the watch list to PLAYLIST_ENTRY_LIMIT_INIT videos if we got no video ID.
+            CHANNEL_LAST_VIDEO=$(cat "${FILE_CHANNEL_LAST_VIDEO}")
+            if [ -z "${CHANNEL_LAST_VIDEO}" ]; then
+                PLAYLIST_ENTRY_LIMIT=$PLAYLIST_ENTRY_LIMIT_INIT
             fi
 
+            # Fetch new list of videos.
             ytw.lib.main.print_status_ok \
                 "${CHANNEL_NAME}" \
-                "Waiting" \
-                "$(ytw.lib.print.yellow "${FIREFOX_INSTANCE_LIFETIME}")" \
-                "minutes before gracefully closing Firefox."
+                "Fetching videos from channel."
+            {
+                yt-dlp \
+                    --lazy-playlist \
+                    --flat-playlist \
+                    --playlist-end $PLAYLIST_ENTRY_LIMIT \
+                    --print-to-file "%(id)s %(webpage_url)s" "${TMP_DIR}/playlist" \
+                    "https://www.youtube.com/@${CHANNEL_NAME}/videos" \
+                    1>/dev/null
+            } || {
+                ytw.lib.main.print_status_error \
+                    "${CHANNEL_NAME}" \
+                    "Couldn't fetch videos from channel." "See error(s) above. Exiting."
+                exit 1
+            }
 
-            if [ $OPT_DRY_RUN -eq 0 ]; then
-                WEBSOCKETD_PID=$(
-                    ytw.libexec.websocketd.start \
-                        "${TMP_DIR}/websocket" \
-                        2 \
-                        "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+            # If there's no last watched video ID recorded process the whole playlist.
+            if [ -z "${CHANNEL_LAST_VIDEO}" ]; then
+                WATCH_ENTRIES=$(tac "${TMP_DIR}/playlist")
+            fi
+
+            # Non-playlists won't return an upload date so we can only use the last watched video ID.
+            if [ -n "${CHANNEL_LAST_VIDEO}" ]; then
+                # Order from oldest to newest video.
+                WATCH_ENTRIES=$(
+                    tac "${TMP_DIR}/playlist" |
+                        grep -F -A $PLAYLIST_ENTRY_LIMIT "${CHANNEL_LAST_VIDEO}" |
+                        grep -v "${CHANNEL_LAST_VIDEO}" ||
+                        true
                 )
-                tail -F "${TMP_DIR}/websocket" 2>/dev/null &
-                TAIL_PID=$!
             fi
 
-            # shellcheck disable=SC2086
-            ytw.lib.sleep.minutes \
-                $FIREFOX_INSTANCE_LIFETIME \
-                "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+            # Skip if no new videos are available yet.
+            if [ -z "${WATCH_ENTRIES}" ]; then
+                ytw.lib.main.print_status_info \
+                    "${CHANNEL_NAME}" \
+                    "No new videos for channel. Skipping."
 
-            ytw.lib.main.print_status_ok \
-                "${CHANNEL_NAME}" \
-                "Gracefully killing Firefox with" \
-                "$(ytw.lib.print.yellow "SIGTERM")."
-
-            # shellcheck disable=SC2086
-            if [ $OPT_DRY_RUN -eq 0 ]; then
-                kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID &>/dev/null
+                continue 2
             fi
 
-            # Remember the last fully watched video.
-            if [ $OPT_DRY_RUN -eq 0 ]; then
-                printf '%s' "${YOUTUBE_ID}" >"${FILE_CHANNEL_LAST_VIDEO}"
-            fi
-            ITERATION=$((ITERATION + 1))
+            ITERATION=1
+            ITERATION_TOTAL=$(printf '%s\n' "${WATCH_ENTRIES[@]}" | wc -l)
+            while read -r WATCH_ENTRY; do
+                YOUTUBE_ID=$(echo "${WATCH_ENTRY}" | cut -d' ' -f1)
+                YOUTUBE_URL=$(echo "${WATCH_ENTRY}" | cut -d' ' -f2)
 
-            # Cool down queue.
-            ytw.lib.main.cool_down_queue
-        done <<<"${WATCH_ENTRIES[@]}"
+                if [ $OPT_DRY_RUN -eq 0 ]; then
+                    ytw.lib.hooks.discord.hook \
+                        "[${CHANNEL_NAME}]" \
+                        "Start watching video with ID \`${YOUTUBE_ID}\`." \
+                        "${YOUTUBE_ID}" \
+                        "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+                fi
+
+                ytw.lib.main.print_status_ok \
+                    "${CHANNEL_NAME}" \
+                    "Starting Firefox instance with URL" \
+                    "'$(ytw.lib.print.yellow "${YOUTUBE_URL}")'." \
+                    "$(ytw.lib.print.iteration "${ITERATION}" "${ITERATION_TOTAL}")"
+
+                # Starts a Firefox instance with a video from the playlist and closes Firefox
+                # after the duration of the video with some small buffer.
+                FIREFOX_INSTANCE_LIFETIME=$(
+                    ytw.lib.main.get_sleep_by_duration \
+                        "${YOUTUBE_URL}" \
+                        $YOUTUBE_PLAYBACK_SPEED
+                )
+
+                if [ $OPT_DRY_RUN -eq 0 ]; then
+                    exec ${FIREFOX_COMMAND} "${YOUTUBE_URL}" &>/dev/null &
+                    declare -i FIREFOX_PID
+                    FIREFOX_PID=$!
+                fi
+
+                ytw.lib.main.print_status_ok \
+                    "${CHANNEL_NAME}" \
+                    "Waiting" \
+                    "$(ytw.lib.print.yellow "${FIREFOX_INSTANCE_LIFETIME}")" \
+                    "minutes before gracefully closing Firefox."
+
+                if [ $OPT_DRY_RUN -eq 0 ]; then
+                    WEBSOCKETD_PID=$(
+                        ytw.libexec.websocketd.start \
+                            "${TMP_DIR}/websocket" \
+                            2 \
+                            "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+                    )
+                    tail -F "${TMP_DIR}/websocket" 2>/dev/null &
+                    TAIL_PID=$!
+                fi
+
+                # shellcheck disable=SC2086
+                ytw.lib.sleep.minutes \
+                    $FIREFOX_INSTANCE_LIFETIME \
+                    "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${CHANNEL_NAME}")]")"
+
+                ytw.lib.main.print_status_ok \
+                    "${CHANNEL_NAME}" \
+                    "Gracefully killing Firefox with" \
+                    "$(ytw.lib.print.yellow "SIGTERM")."
+
+                # shellcheck disable=SC2086
+                if [ $OPT_DRY_RUN -eq 0 ]; then
+                    kill -15 $FIREFOX_PID $WEBSOCKETD_PID $TAIL_PID &>/dev/null
+                fi
+
+                # Remember the last fully watched video.
+                if [ $OPT_DRY_RUN -eq 0 ]; then
+                    printf '%s' "${YOUTUBE_ID}" >"${FILE_CHANNEL_LAST_VIDEO}"
+                fi
+                ITERATION=$((ITERATION + 1))
+
+                # Cool down queue.
+                ytw.lib.main.cool_down_queue
+            done <<<"${WATCH_ENTRIES[@]}"
+        done
     done
+
+    # Cool down processing channel videos for 2h.
+    ytw.lib.main.print_status_info \
+        "${SCRIPT}" \
+        "Throttling channels for $(ytw.lib.print.yellow "60")m."
+    ytw.lib.sleep.minutes \
+        60 \
+        "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${SCRIPT}")]")"
 done
