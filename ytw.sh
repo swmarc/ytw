@@ -331,6 +331,7 @@ while true; do
                     "minutes before gracefully closing Firefox."
 
                 if [ $OPT_DRY_RUN -eq 0 ]; then
+                    truncate -s 0 ""${TMP_DIR}/websocket""
                     WEBSOCKETD_PID=$(
                         ytw.libexec.websocketd.start \
                             "${TMP_DIR}/websocket" \
