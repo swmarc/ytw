@@ -106,6 +106,20 @@ fi
 # shellcheck source=.ywt.config.sh
 source "${CONFIG_FILE}"
 
+# shellcheck disable=SC2155
+declare -r TMP_DIR=$(mktemp -d)
+declare RUNNER_OPTIONS="Runner options:"
+# shellcheck disable=SC2155
+declare -ir RUNNER_OPTIONS_LENGTH=$(printf "%s" "${RUNNER_OPTIONS}" | wc -m)
+declare -r FIREFOX_PROFILES="${CWD}/.profiles"
+declare DISCORD_WEBHOOK=""
+if [ -f "${CWD}/discord-webhook" ]; then
+    # shellcheck disable=SC2034
+    # shellcheck disable=SC2155
+    DISCORD_WEBHOOK=$(cat "${CWD}/discord-webhook")
+fi
+declare -r DISCORD_WEBHOOK
+
 if [ -z "${CHANNEL_NAMES}" ]; then
     echo -ne "$(ytw.lib.print.bold "[$(ytw.lib.print.red "!!!")]") "
     echo "Missing YouTube Channel Name(s)."
@@ -342,7 +356,7 @@ while true; do
     # Cool down processing channel videos for 2h.
     ytw.lib.main.print_status_info \
         "${SCRIPT}" \
-        "Throttling channels for $(ytw.lib.print.yellow "60")m."
+        "Throttling channels for $(ytw.lib.print.yellow "60") minutes."
     ytw.lib.sleep.minutes \
         60 \
         "$(ytw.lib.print.bold "[$(ytw.lib.print.blue_light "${SCRIPT}")]")"
