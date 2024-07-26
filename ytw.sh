@@ -118,7 +118,7 @@ declare -ir RUNNER_OPTIONS_LENGTH=$(printf "%s" "${RUNNER_OPTIONS}" | wc -m)
 declare -r FIREFOX_PROFILES="${CWD}/.profiles"
 declare DISCORD_WEBHOOK=""
 if [ -f "${CWD}/discord-webhook" ]; then
-    read -r DISCORD_WEBHOOK <"${CWD}/discord-webhook"
+    DISCORD_WEBHOOK=$(<"${CWD}/discord-webhook")
 fi
 declare -r DISCORD_WEBHOOK
 
@@ -231,7 +231,7 @@ while true; do
             fi
 
             # Limit the watch list to PLAYLIST_ENTRY_LIMIT_INIT videos if we got no video ID.
-            read -r CHANNEL_LAST_VIDEO <"${FILE_CHANNEL_LAST_VIDEO}"
+            CHANNEL_LAST_VIDEO=$(<"${FILE_CHANNEL_LAST_VIDEO}")
             if [ -z "${CHANNEL_LAST_VIDEO}" ]; then
                 PLAYLIST_ENTRY_LIMIT=$PLAYLIST_ENTRY_LIMIT_INIT
             fi
