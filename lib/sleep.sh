@@ -51,8 +51,8 @@ ytw.lib.sleep.minutes() {
         fi
 
         # Render out any second again in case it got overwritten for too long due to other messages.
+        DATETIME=$(ytw.lib.datetime.get)
         for ((SECOND = SECONDS; SECOND > 0; SECOND--)); do
-            DATETIME=$(ytw.lib.datetime.get)
             echo -ne \
                 "\033[1K\r$(ytw.lib.print.bold "[$(ytw.lib.print.yellow "***")]")" \
                 "$(ytw.lib.print.bold "[${DATETIME}]")" \

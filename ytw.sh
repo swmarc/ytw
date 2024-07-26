@@ -118,9 +118,7 @@ declare -ir RUNNER_OPTIONS_LENGTH=$(printf "%s" "${RUNNER_OPTIONS}" | wc -m)
 declare -r FIREFOX_PROFILES="${CWD}/.profiles"
 declare DISCORD_WEBHOOK=""
 if [ -f "${CWD}/discord-webhook" ]; then
-    # shellcheck disable=SC2034
-    # shellcheck disable=SC2155
-    DISCORD_WEBHOOK=$(cat "${CWD}/discord-webhook")
+    DISCORD_WEBHOOK=$(<"${CWD}/discord-webhook")
 fi
 declare -r DISCORD_WEBHOOK
 
@@ -233,7 +231,7 @@ while true; do
             fi
 
             # Limit the watch list to PLAYLIST_ENTRY_LIMIT_INIT videos if we got no video ID.
-            CHANNEL_LAST_VIDEO=$(cat "${FILE_CHANNEL_LAST_VIDEO}")
+            CHANNEL_LAST_VIDEO=$(<"${FILE_CHANNEL_LAST_VIDEO}")
             if [ -z "${CHANNEL_LAST_VIDEO}" ]; then
                 PLAYLIST_ENTRY_LIMIT=$PLAYLIST_ENTRY_LIMIT_INIT
             fi
@@ -331,7 +329,7 @@ while true; do
                     "minutes before gracefully closing Firefox."
 
                 if [ $OPT_DRY_RUN -eq 0 ]; then
-                    truncate -s 0 ""${TMP_DIR}/websocket""
+                    truncate -s 0 "${TMP_DIR}/websocket"
                     WEBSOCKETD_PID=$(
                         ytw.libexec.websocketd.start \
                             "${TMP_DIR}/websocket" \
