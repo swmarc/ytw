@@ -267,8 +267,8 @@ while true; do
                 # shellcheck disable=SC2086
                 WATCH_ENTRIES=$(
                     tac "${TMP_DIR}/playlist" |
-                        grep -F -A $PLAYLIST_ENTRY_LIMIT "${CHANNEL_LAST_VIDEO}" |
-                        grep -v "${CHANNEL_LAST_VIDEO}" ||
+                        grep -F -A $PLAYLIST_ENTRY_LIMIT -- "${CHANNEL_LAST_VIDEO}" |
+                        grep -v -- "${CHANNEL_LAST_VIDEO}" ||
                         true
                 )
             fi
